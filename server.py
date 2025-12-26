@@ -12,15 +12,33 @@ mcp = FastMCP("NowCapitalRetirement Planner")
 def calculate_sustainable_spend(
     current_age: int, 
     retirement_age: int, 
+    province: str = "ON",
     total_savings: float = 0,
     savings_rrsp: float = 0,
     savings_tfsa: float = 0,
     savings_non_reg: float = 0,
-    province: str = "ON",
     # Advanced Options (Person 1)
     name: str = "User",
     death_age: int = 92,
     non_reg_acb: float | None = None,
+    lira: float = 0,
+    tfsa_contribution_room: float = 0,
+    rrsp_contribution_room: float = 0,
+    cpp_start_age: int = 65,
+    oas_start_age: int = 65,
+    db_enabled: bool = False,
+    db_pension_income: float = 0,
+    db_start_age: int = 65,
+    db_index_before_retirement: bool = True,
+    db_index_after_retirement: float = 0.0,
+    enable_rrsp_meltdown: bool = False,
+    lif_conversion_age: int = 71,
+    rrif_conversion_age: int = 71,
+    # Investment Assumptions (Person 1 & Global)
+    non_registered_growth_capital_gains_pct: float = 90.0,
+    non_registered_dividend_yield_pct: float = 2.0,
+    non_registered_eligible_dividend_proportion_pct: float = 70.0,
+    
     # Couple Options (Person 2)
     spouse_name: str = "Spouse",
     spouse_age: int | None = None,
@@ -28,7 +46,23 @@ def calculate_sustainable_spend(
     spouse_total_savings: float = 0,
     spouse_savings_rrsp: float = 0,
     spouse_savings_tfsa: float = 0,
-    spouse_savings_non_reg: float = 0
+    spouse_savings_non_reg: float = 0,
+    spouse_non_reg_acb: float | None = None,
+    spouse_lira: float = 0,
+    spouse_tfsa_contribution_room: float = 0,
+    spouse_rrsp_contribution_room: float = 0,
+    spouse_cpp_start_age: int = 65,
+    spouse_oas_start_age: int = 65,
+    spouse_db_enabled: bool = False,
+    spouse_db_pension_income: float = 0,
+    spouse_db_start_age: int = 65,
+    
+    # Global/Scenario Inputs
+    income_split: bool | None = None,
+    expected_returns: float = 5.0,
+    cpi: float = 2.0,
+    allocation: float = 100.0,
+    base_tfsa_amount: float = 7000.0
 ) -> dict:
     """
     Calculates the maximum monthly amount a user (and optional spouse) can spend in retirement.
@@ -36,14 +70,30 @@ def calculate_sustainable_spend(
     Args:
         current_age: Age today.
         retirement_age: Desired retirement age.
+        province: Canadian province code (e.g., 'ON', 'BC').
         total_savings: (Optional) Lump sum of savings. Used if specific account values are not provided.
         savings_rrsp: (Optional) Specific amount in RRSP.
         savings_tfsa: (Optional) Specific amount in TFSA.
         savings_non_reg: (Optional) Specific amount in Non-Registered accounts.
-        province: Canadian province code (e.g., 'ON', 'BC').
         name: (Optional) Name of the primary person.
         death_age: (Optional) Age of death for planning (default 92).
         non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets.
+        lira: (Optional) Locked-in Retirement Account balance.
+        tfsa_contribution_room: (Optional) Available TFSA contribution room.
+        rrsp_contribution_room: (Optional) Available RRSP contribution room.
+        cpp_start_age: (Optional) Age to start CPP (60-70).
+        oas_start_age: (Optional) Age to start OAS (65-70).
+        db_enabled: (Optional) Person 1 has a Defined Benefit pension.
+        db_pension_income: (Optional) Annual DB pension income (future dollars at start age).
+        db_start_age: (Optional) Age DB pension starts.
+        db_index_before_retirement: (Optional) Does DB pension index to inflation before retirement?
+        db_index_after_retirement: (Optional) Annual indexing % after retirement (e.g. 0.0 for no indexing).
+        enable_rrsp_meltdown: (Optional) Strategy to withdraw extra RRSP early to reduce tax.
+        lif_conversion_age: (Optional) Age to convert LIRA to LIF (max 71).
+        rrif_conversion_age: (Optional) Age to convert RRSP to RRIF (max 71).
+        non_registered_growth_capital_gains_pct: (Optional) % of growth treated as capital gains (vs interest).
+        non_registered_dividend_yield_pct: (Optional) % of non-reg balance that is dividend yield.
+        non_registered_eligible_dividend_proportion_pct: (Optional) % of dividends that are eligible.
         spouse_name: (Optional) Name of spouse.
         spouse_age: (Optional) Provide this to trigger a COUPLE simulation.
         spouse_retirement_age: (Optional) Defaults to primary retirement age if missing.
@@ -51,6 +101,16 @@ def calculate_sustainable_spend(
         spouse_savings_rrsp: (Optional) Spouse RRSP.
         spouse_savings_tfsa: (Optional) Spouse TFSA.
         spouse_savings_non_reg: (Optional) Spouse Non-Reg.
+        spouse_non_reg_acb: (Optional) Spouse Non-Reg ACB.
+        spouse_lira: (Optional) Spouse LIRA.
+        spouse_db_enabled: (Optional) Spouse has DB pension.
+        spouse_db_pension_income: (Optional) Spouse DB annual income.
+        spouse_db_start_age: (Optional) Spouse DB start age.
+        income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified).
+        expected_returns: (Optional) Nominal expected portfolio return %.
+        cpi: (Optional) Inflation rate %.
+        allocation: (Optional) Equity allocation %.
+        base_tfsa_amount: (Optional) Annual new TFSA room.
     """
     
     # 1. Authentication Check
@@ -71,10 +131,9 @@ def calculate_sustainable_spend(
 
     # --- Person 1 Data ---
     p1_rrsp, p1_tfsa, p1_non_reg = distribute_savings(total_savings, savings_rrsp, savings_tfsa, savings_non_reg)
-    p1_total = p1_rrsp + p1_tfsa + p1_non_reg
+    p1_total = p1_rrsp + p1_tfsa + p1_non_reg + lira
     
     # Logic for ACB (Adjusted Cost Base)
-    # If not provided, assume 90% of value (some growth) if existing, else equal to value (new cash)
     if non_reg_acb is not None:
         p1_cost_basis = float(non_reg_acb)
     else:
@@ -86,8 +145,16 @@ def calculate_sustainable_spend(
     p2_retire = spouse_retirement_age if spouse_retirement_age else retirement_age
     
     p2_rrsp, p2_tfsa, p2_non_reg = distribute_savings(spouse_total_savings, spouse_savings_rrsp, spouse_savings_tfsa, spouse_savings_non_reg)
-    p2_total = p2_rrsp + p2_tfsa + p2_non_reg
+    p2_total = p2_rrsp + p2_tfsa + p2_non_reg + spouse_lira
     
+    if spouse_non_reg_acb is not None:
+        p2_cost_basis = float(spouse_non_reg_acb)
+    else:
+        p2_cost_basis = p2_non_reg * 0.9 if p2_non_reg > 0 else 0
+
+    # Determine income splitting default
+    final_income_split = income_split if income_split is not None else is_couple
+
     # 3. Construct the Payload
     payload = {
         "person1_ui": {
@@ -99,24 +166,37 @@ def calculate_sustainable_spend(
             "rrsp": p1_rrsp,
             "tfsa": p1_tfsa,
             "non_registered": p1_non_reg,
+            "lira": lira,
             "cost_basis": p1_cost_basis,
-            # Defaults
-            "lira": 0.0,
+            "rrsp_contribution_room": rrsp_contribution_room,
+            "tfsa_contribution_room": tfsa_contribution_room,
+            
+            # Retirement Benefits
+            "cpp_start_age": cpp_start_age, 
+            "oas_start_age": oas_start_age, 
+            "base_cpp_amount": 10000, # Simplified default, could be exposed later
+            "base_oas_amount": 8000, 
+            
+            # DB Pension
+            "db_enabled": db_enabled,
+            "db_pension_income": db_pension_income,
+            "db_start_age": db_start_age,
+            "db_index_before_retirement": db_index_before_retirement,
+            "db_index_after_retirement": db_index_after_retirement,
+
+            # Advanced Logic
+            "enable_rrsp_meltdown": enable_rrsp_meltdown,
+            "lif_conversion_age": lif_conversion_age,
+            "rrif_conversion_age": rrif_conversion_age,
+            "lif_type": 1,
+            "non_registered_growth_capital_gains_pct": non_registered_growth_capital_gains_pct,
+            "non_registered_dividend_yield_pct": non_registered_dividend_yield_pct,
+            "non_registered_eligible_dividend_proportion_pct": non_registered_eligible_dividend_proportion_pct,
+            
+            # Contributions (Defaults 0 for now)
             "rrsp_contribution": 0.0,
             "tfsa_contribution": 0.0,
             "non_registered_contribution": 0.0,
-            "cpp_start_age": 65, 
-            "oas_start_age": 65, 
-            "base_cpp_amount": 10000, 
-            "base_oas_amount": 8000, 
-            "lif_conversion_age": 71,
-            "rrif_conversion_age": 71,
-            "lif_type": 1,
-            "non_registered_growth_capital_gains_pct": 90.0,
-            "non_registered_dividend_yield_pct": 2.0,
-            "non_registered_eligible_dividend_proportion_pct": 70.0,
-            "db_enabled": False,
-            "db_pension_income": 0.0,
         },
         "person2_ui": {
             "name": spouse_name,
@@ -126,22 +206,37 @@ def calculate_sustainable_spend(
             "rrsp": p2_rrsp,
             "tfsa": p2_tfsa,
             "non_registered": p2_non_reg,
-            "cost_basis": p2_non_reg * 0.9, # Default for spouse ACB
-            # Defaults
+            "lira": spouse_lira,
+            "cost_basis": p2_cost_basis,
+            "rrsp_contribution_room": spouse_rrsp_contribution_room,
+            "tfsa_contribution_room": spouse_tfsa_contribution_room,
+            
+            "cpp_start_age": spouse_cpp_start_age, 
+            "oas_start_age": spouse_oas_start_age, 
+            "base_cpp_amount": 10000 if is_couple else 0, 
+            "base_oas_amount": 8000 if is_couple else 0,
+            
+            "db_enabled": spouse_db_enabled,
+            "db_pension_income": spouse_db_pension_income,
+            "db_start_age": spouse_db_start_age,
+            "db_index_before_retirement": True, # Default for spouse
+            "db_index_after_retirement": 0.0,
+            
+            "lif_conversion_age": 71, 
+            "rrif_conversion_age": 71, 
+            "lif_type": 1,
+            
             "rrsp_contribution": 0, "tfsa_contribution": 0, "non_registered_contribution": 0,
-            "cpp_start_age": 65, "oas_start_age": 65, "base_cpp_amount": 10000 if is_couple else 0, "base_oas_amount": 8000 if is_couple else 0,
-             "lif_conversion_age": 71, "rrif_conversion_age": 71, "lif_type": 1,
-            "db_enabled": False
         },
         "inputs": {
-            "expected_returns": 5.0, 
-            "cpi": 2.0,              
+            "expected_returns": expected_returns, 
+            "cpi": cpi,              
             "province": province,
-            "individual": not is_couple, # Switch API mode
-            "income_split": is_couple,   # Enable splitting if couple
+            "individual": not is_couple,
+            "income_split": final_income_split,
             "rrif_min_withdrawal": False,
-            "allocation": 100,       
-            "base_tfsa_amount": 7000.0
+            "allocation": allocation,       
+            "base_tfsa_amount": base_tfsa_amount
         },
         "withdrawal_strategy": {
             "person1": {
@@ -174,6 +269,16 @@ def calculate_sustainable_spend(
             narrative_intro += f" (Couple: {name} & {spouse_name})"
         else:
             narrative_intro += f" (Individual: {name})"
+            
+        # Add notes about advanced features used
+        features_used = []
+        if db_enabled: features_used.append(f"DB Pension (${db_pension_income:,.0f}/yr)")
+        if lira > 0: features_used.append("LIRA")
+        if enable_rrsp_meltdown: features_used.append("RRSP Meltdown")
+        
+        feature_str = ""
+        if features_used:
+            feature_str = f" [Includes: {', '.join(features_used)}]"
 
         return {
             "max_monthly_spend": max_monthly,
@@ -185,8 +290,8 @@ def calculate_sustainable_spend(
                 "monthly_spend": max_monthly
             },
             "narrative": (
-                f"{narrative_intro}, "
-                f"you can sustainably spend approximately **${max_monthly:,.2f} per month** (after-tax, inflation-adjusted) "
+                f"{narrative_intro}{feature_str}, "
+                f"you can sustainably spend approximately **${max_monthly:,.2f} per month** (after-tax, inflation-adjusted, in today's dollars) "
                 f"until age {death_age}."
             )
         }
