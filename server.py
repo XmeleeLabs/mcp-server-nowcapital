@@ -26,6 +26,8 @@ def calculate_sustainable_spend(
     rrsp_contribution_room: float = 0,
     cpp_start_age: int = 65,
     oas_start_age: int = 65,
+    base_cpp_amount: float = 17196.0,  # Max CPP for 2025
+    base_oas_amount: float = 8876.0,   # OAS for 2025
     db_enabled: bool = False,
     db_pension_income: float = 0,
     db_start_age: int = 65,
@@ -68,6 +70,8 @@ def calculate_sustainable_spend(
     spouse_rrsp_contribution_room: float = 0,
     spouse_cpp_start_age: int = 65,
     spouse_oas_start_age: int = 65,
+    spouse_base_cpp_amount: float = 0.0, 
+    spouse_base_oas_amount: float = 8876.0, 
     spouse_db_enabled: bool = False,
     spouse_db_pension_income: float = 0,
     spouse_db_start_age: int = 65,
@@ -124,6 +128,8 @@ def calculate_sustainable_spend(
         rrsp_contribution_room: (Optional) Available RRSP contribution room.
         cpp_start_age: (Optional) Age to start CPP (60-70).
         oas_start_age: (Optional) Age to start OAS (65-70).
+        base_cpp_amount: (Optional) Expected annual CPP amount at age 65 (max $17,196 for 2025).
+        base_oas_amount: (Optional) Expected annual OAS amount at age 65 ($8,876 for 2025).
         db_enabled: (Optional) Person 1 has a Defined Benefit pension.
         db_pension_income: (Optional) Annual DB pension income (future dollars at start age).
         db_start_age: (Optional) Age DB pension starts.
@@ -157,6 +163,10 @@ def calculate_sustainable_spend(
         spouse_savings_non_reg: (Optional) Spouse Non-Reg.
         spouse_non_reg_acb: (Optional) Spouse Non-Reg ACB.
         spouse_lira: (Optional) Spouse LIRA.
+        spouse_cpp_start_age: (Optional) Spouse CPP start age.
+        spouse_oas_start_age: (Optional) Spouse OAS start age.
+        spouse_base_cpp_amount: (Optional) Spouse expected annual CPP (max $17,196 for 2025).
+        spouse_base_oas_amount: (Optional) Spouse expected annual OAS ($8,876 for 2025).
         spouse_db_enabled: (Optional) Spouse has DB pension.
         spouse_db_pension_income: (Optional) Spouse DB annual income.
         spouse_db_start_age: (Optional) Spouse DB start age.
@@ -250,8 +260,8 @@ def calculate_sustainable_spend(
             # Retirement Benefits
             "cpp_start_age": cpp_start_age, 
             "oas_start_age": oas_start_age, 
-            "base_cpp_amount": 10000, # Simplified default, could be exposed later
-            "base_oas_amount": 8000, 
+            "base_cpp_amount": base_cpp_amount,
+            "base_oas_amount": base_oas_amount, 
             
             # DB Pension
             "db_enabled": db_enabled,
@@ -297,8 +307,8 @@ def calculate_sustainable_spend(
             
             "cpp_start_age": spouse_cpp_start_age, 
             "oas_start_age": spouse_oas_start_age, 
-            "base_cpp_amount": 10000 if is_couple else 0, 
-            "base_oas_amount": 8000 if is_couple else 0,
+            "base_cpp_amount": spouse_base_cpp_amount if is_couple else 0,
+            "base_oas_amount": spouse_base_oas_amount if is_couple else 0,
             
             "db_enabled": spouse_db_enabled,
             "db_pension_income": spouse_db_pension_income,
