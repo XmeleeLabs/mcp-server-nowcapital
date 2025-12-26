@@ -16,13 +16,40 @@ It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian reti
 ## Quick Start (Using `uv`)
 The easiest way to run this server is with `uv`, a fast Python tool.
 
+> **Don't have `uv`?**
+> *   **Windows**: `powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`
+> *   **Mac/Linux**: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
 ### 1. Configure Claude Desktop
-Edit your `claude_desktop_config.json` file:
+Edit `claude_desktop_config.json`:
 *   **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 *   **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 Add this entry (replace the **path** and **API Key**):
 
+### Windows Configuration
+```json
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "fastmcp",
+        "--with", "requests",
+        "python",
+        "C:\\Users\\YourName\\path\\to\\mcp-server-nowcapital\\server.py"
+      ],
+      "env": {
+        "NOWCAPITAL_API_KEY": "sk_your_key_here",
+        "NOWCAPITAL_API_BASE_URL": "https://api.nowcapital.ca"
+      }
+    }
+  }
+}
+```
+
+### Mac/Linux Configuration
 ```json
 {
   "mcpServers": {
@@ -51,18 +78,33 @@ Try asking: *"Calculate my max retirement spend if I have $600k in savings and I
 ## Standard Installation (No `uv`)
 If you prefer standard pip:
 
-1.  **Clone and Install**:
-    ```bash
-    git clone https://github.com/XmeleeLabs/mcp-server-nowcapital.git
-    cd mcp-server-nowcapital
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
+### Windows (PowerShell)
+```powershell
+git clone https://github.com/XmeleeLabs/mcp-server-nowcapital.git
+cd mcp-server-nowcapital
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-2.  **Run Development Inspector**:
-    ```bash
-    export NOWCAPITAL_API_KEY="sk_test_key"
-    export NOWCAPITAL_API_BASE_URL="http://your-backend-url" # or https://api.nowcapital.ca
-    fastmcp dev mcp_server.py
-    ```
+### Mac/Linux (Bash)
+```bash
+git clone https://github.com/XmeleeLabs/mcp-server-nowcapital.git
+cd mcp-server-nowcapital
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Run Development Inspector
+```bash
+# Windows (PowerShell)
+$env:NOWCAPITAL_API_KEY="sk_test_key"
+$env:NOWCAPITAL_API_BASE_URL="http://your-backend-url"
+fastmcp dev server.py
+
+# Mac/Linux
+export NOWCAPITAL_API_KEY="sk_test_key"
+export NOWCAPITAL_API_BASE_URL="http://your-backend-url" # or https://api.nowcapital.ca
+fastmcp dev server.py
+```
