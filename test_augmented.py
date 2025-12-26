@@ -6,7 +6,7 @@ import sys
 # Configuration
 SERVER_SCRIPT = os.path.join(os.path.dirname(__file__), "server.py")
 PYTHON_EXE = sys.executable 
-API_KEY = "sk_poc_test_123"
+API_KEY = os.environ.get("NOWCAPITAL_API_KEY", "sk_poc_test_123")
 
 def test_augmented_mcp_server():
     print(f"Testing Augmented MCP Server at: {SERVER_SCRIPT}")

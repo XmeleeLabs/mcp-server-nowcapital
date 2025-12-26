@@ -34,6 +34,20 @@ def calculate_sustainable_spend(
     enable_rrsp_meltdown: bool = False,
     lif_conversion_age: int = 71,
     rrif_conversion_age: int = 71,
+    lif_type: int = 1,
+    # DB Pension Advanced (Person 1)
+    db_index_after_retirement_to_cpi: bool = False,
+    db_cpp_clawback_fraction: float = 0.0,
+    db_survivor_benefit_percentage: float = 0.0,
+    pension_plan_type: str = "Generic",
+    has_10_year_guarantee: bool = False,
+    has_supplementary_death_benefit: bool = False,
+    db_share_to_spouse: float = 0.0,
+    db_is_survivor_pension: bool = False,
+    # Contributions (Person 1)
+    rrsp_contribution: float = 0.0,
+    tfsa_contribution: float = 0.0,
+    non_registered_contribution: float = 0.0,
     # Investment Assumptions (Person 1 & Global)
     non_registered_growth_capital_gains_pct: float = 90.0,
     non_registered_dividend_yield_pct: float = 2.0,
@@ -56,13 +70,39 @@ def calculate_sustainable_spend(
     spouse_db_enabled: bool = False,
     spouse_db_pension_income: float = 0,
     spouse_db_start_age: int = 65,
+    spouse_db_index_before_retirement: bool = True,
+    spouse_db_index_after_retirement: float = 0.0,
+    spouse_enable_rrsp_meltdown: bool = False,
+    spouse_lif_conversion_age: int = 71,
+    spouse_rrif_conversion_age: int = 71,
+    spouse_lif_type: int = 1,
+    # DB Pension Advanced (Person 2/Spouse)
+    spouse_db_index_after_retirement_to_cpi: bool = False,
+    spouse_db_cpp_clawback_fraction: float = 0.0,
+    spouse_db_survivor_benefit_percentage: float = 0.0,
+    spouse_pension_plan_type: str = "Generic",
+    spouse_has_10_year_guarantee: bool = False,
+    spouse_has_supplementary_death_benefit: bool = False,
+    spouse_db_share_to_spouse: float = 0.0,
+    spouse_db_is_survivor_pension: bool = False,
+    # Contributions (Person 2/Spouse)
+    spouse_rrsp_contribution: float = 0.0,
+    spouse_tfsa_contribution: float = 0.0,
+    spouse_non_registered_contribution: float = 0.0,
+    # Investment Assumptions (Person 2/Spouse)
+    spouse_non_registered_growth_capital_gains_pct: float = 90.0,
+    spouse_non_registered_dividend_yield_pct: float = 2.0,
+    spouse_non_registered_eligible_dividend_proportion_pct: float = 70.0,
     
     # Global/Scenario Inputs
     income_split: bool | None = None,
     expected_returns: float = 5.0,
     cpi: float = 2.0,
     allocation: float = 100.0,
-    base_tfsa_amount: float = 7000.0
+    base_tfsa_amount: float = 7000.0,
+    # Expense Planning
+    survivor_expense_percent: float = 100.0,
+    expense_phases: list[dict] | None = None
 ) -> dict:
     """
     Calculates the maximum monthly amount a user (and optional spouse) can spend in retirement.
@@ -91,6 +131,18 @@ def calculate_sustainable_spend(
         enable_rrsp_meltdown: (Optional) Strategy to withdraw extra RRSP early to reduce tax.
         lif_conversion_age: (Optional) Age to convert LIRA to LIF (max 71).
         rrif_conversion_age: (Optional) Age to convert RRSP to RRIF (max 71).
+        lif_type: (Optional) LIF type (default 1).
+        db_index_after_retirement_to_cpi: (Optional) Index DB to CPI after retirement instead of fixed %.
+        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback when CPP starts (0.0-1.0).
+        db_survivor_benefit_percentage: (Optional) % of pension continuing to survivor (e.g., 0.60).
+        pension_plan_type: (Optional) Pension plan type.
+        has_10_year_guarantee: (Optional) Pension has 10-year guarantee.
+        has_supplementary_death_benefit: (Optional) Pension has death benefit.
+        db_share_to_spouse: (Optional) Pension share to spouse.
+        db_is_survivor_pension: (Optional) Whether this is a survivor pension.
+        rrsp_contribution: (Optional) Annual RRSP contributions before retirement.
+        tfsa_contribution: (Optional) Annual TFSA contributions before retirement.
+        non_registered_contribution: (Optional) Annual non-registered contributions before retirement.
         non_registered_growth_capital_gains_pct: (Optional) % of growth treated as capital gains (vs interest).
         non_registered_dividend_yield_pct: (Optional) % of non-reg balance that is dividend yield.
         non_registered_eligible_dividend_proportion_pct: (Optional) % of dividends that are eligible.
@@ -106,11 +158,33 @@ def calculate_sustainable_spend(
         spouse_db_enabled: (Optional) Spouse has DB pension.
         spouse_db_pension_income: (Optional) Spouse DB annual income.
         spouse_db_start_age: (Optional) Spouse DB start age.
+        spouse_db_index_before_retirement: (Optional) Spouse DB indexes before retirement.
+        spouse_db_index_after_retirement: (Optional) Spouse DB indexing % after retirement.
+        spouse_enable_rrsp_meltdown: (Optional) Spouse RRSP meltdown strategy.
+        spouse_lif_conversion_age: (Optional) Spouse LIRA to LIF conversion age.
+        spouse_rrif_conversion_age: (Optional) Spouse RRSP to RRIF conversion age.
+        spouse_lif_type: (Optional) Spouse LIF type.
+        spouse_db_index_after_retirement_to_cpi: (Optional) Spouse DB indexes to CPI after retirement.
+        spouse_db_cpp_clawback_fraction: (Optional) Spouse DB bridge benefit clawback (0.0-1.0).
+        spouse_db_survivor_benefit_percentage: (Optional) Spouse DB survivor benefit % (e.g., 0.60).
+        spouse_pension_plan_type: (Optional) Spouse pension plan type.
+        spouse_has_10_year_guarantee: (Optional) Spouse pension has 10-year guarantee.
+        spouse_has_supplementary_death_benefit: (Optional) Spouse pension has death benefit.
+        spouse_db_share_to_spouse: (Optional) Spouse pension share allocation.
+        spouse_db_is_survivor_pension: (Optional) Spouse is receiving survivor pension.
+        spouse_rrsp_contribution: (Optional) Spouse annual RRSP contributions.
+        spouse_tfsa_contribution: (Optional) Spouse annual TFSA contributions.
+        spouse_non_registered_contribution: (Optional) Spouse annual non-registered contributions.
+        spouse_non_registered_growth_capital_gains_pct: (Optional) Spouse % growth as capital gains.
+        spouse_non_registered_dividend_yield_pct: (Optional) Spouse dividend yield %.
+        spouse_non_registered_eligible_dividend_proportion_pct: (Optional) Spouse % eligible dividends.
         income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified).
         expected_returns: (Optional) Nominal expected portfolio return %.
         cpi: (Optional) Inflation rate %.
         allocation: (Optional) Equity allocation %.
         base_tfsa_amount: (Optional) Annual new TFSA room.
+        survivor_expense_percent: (Optional) % of expenses when one spouse passes (default 100%).
+        expense_phases: (Optional) List of spending phases, e.g., [{'duration_years': 10, 'expense_change_pct': 0}].
     """
     
     # 1. Authentication Check
@@ -183,20 +257,28 @@ def calculate_sustainable_spend(
             "db_start_age": db_start_age,
             "db_index_before_retirement": db_index_before_retirement,
             "db_index_after_retirement": db_index_after_retirement,
+            "db_index_after_retirement_to_cpi": db_index_after_retirement_to_cpi,
+            "db_cpp_clawback_fraction": db_cpp_clawback_fraction,
+            "db_survivor_benefit_percentage": db_survivor_benefit_percentage,
+            "pension_plan_type": pension_plan_type,
+            "has_10_year_guarantee": has_10_year_guarantee,
+            "has_supplementary_death_benefit": has_supplementary_death_benefit,
+            "db_share_to_spouse": db_share_to_spouse,
+            "db_is_survivor_pension": db_is_survivor_pension,
 
             # Advanced Logic
             "enable_rrsp_meltdown": enable_rrsp_meltdown,
             "lif_conversion_age": lif_conversion_age,
             "rrif_conversion_age": rrif_conversion_age,
-            "lif_type": 1,
+            "lif_type": lif_type,
             "non_registered_growth_capital_gains_pct": non_registered_growth_capital_gains_pct,
             "non_registered_dividend_yield_pct": non_registered_dividend_yield_pct,
             "non_registered_eligible_dividend_proportion_pct": non_registered_eligible_dividend_proportion_pct,
             
-            # Contributions (Defaults 0 for now)
-            "rrsp_contribution": 0.0,
-            "tfsa_contribution": 0.0,
-            "non_registered_contribution": 0.0,
+            # Contributions
+            "rrsp_contribution": rrsp_contribution,
+            "tfsa_contribution": tfsa_contribution,
+            "non_registered_contribution": non_registered_contribution,
         },
         "person2_ui": {
             "name": spouse_name,
@@ -219,14 +301,28 @@ def calculate_sustainable_spend(
             "db_enabled": spouse_db_enabled,
             "db_pension_income": spouse_db_pension_income,
             "db_start_age": spouse_db_start_age,
-            "db_index_before_retirement": True, # Default for spouse
-            "db_index_after_retirement": 0.0,
+            "db_index_before_retirement": spouse_db_index_before_retirement,
+            "db_index_after_retirement": spouse_db_index_after_retirement,
+            "db_index_after_retirement_to_cpi": spouse_db_index_after_retirement_to_cpi,
+            "db_cpp_clawback_fraction": spouse_db_cpp_clawback_fraction,
+            "db_survivor_benefit_percentage": spouse_db_survivor_benefit_percentage,
+            "pension_plan_type": spouse_pension_plan_type,
+            "has_10_year_guarantee": spouse_has_10_year_guarantee,
+            "has_supplementary_death_benefit": spouse_has_supplementary_death_benefit,
+            "db_share_to_spouse": spouse_db_share_to_spouse,
+            "db_is_survivor_pension": spouse_db_is_survivor_pension,
             
-            "lif_conversion_age": 71, 
-            "rrif_conversion_age": 71, 
-            "lif_type": 1,
+            "enable_rrsp_meltdown": spouse_enable_rrsp_meltdown,
+            "lif_conversion_age": spouse_lif_conversion_age,
+            "rrif_conversion_age": spouse_rrif_conversion_age,
+            "lif_type": spouse_lif_type,
+            "non_registered_growth_capital_gains_pct": spouse_non_registered_growth_capital_gains_pct,
+            "non_registered_dividend_yield_pct": spouse_non_registered_dividend_yield_pct,
+            "non_registered_eligible_dividend_proportion_pct": spouse_non_registered_eligible_dividend_proportion_pct,
             
-            "rrsp_contribution": 0, "tfsa_contribution": 0, "non_registered_contribution": 0,
+            "rrsp_contribution": spouse_rrsp_contribution,
+            "tfsa_contribution": spouse_tfsa_contribution,
+            "non_registered_contribution": spouse_non_registered_contribution,
         },
         "inputs": {
             "expected_returns": expected_returns, 
@@ -236,7 +332,8 @@ def calculate_sustainable_spend(
             "income_split": final_income_split,
             "rrif_min_withdrawal": False,
             "allocation": allocation,       
-            "base_tfsa_amount": base_tfsa_amount
+            "base_tfsa_amount": base_tfsa_amount,
+            "survivor_expense_percent": survivor_expense_percent,
         },
         "withdrawal_strategy": {
             "person1": {
@@ -247,6 +344,10 @@ def calculate_sustainable_spend(
             }
         }
     }
+
+    # Add expense_phases if provided
+    if expense_phases is not None:
+        payload["inputs"]["expense_phases"] = expense_phases
 
     # 4. Call the Backend API
     try:
