@@ -57,6 +57,7 @@ def calculate_sustainable_spend(
     spouse_name: str = "Spouse",
     spouse_age: int | None = None,
     spouse_retirement_age: int | None = None,
+    spouse_death_age: int = 92,
     spouse_total_savings: float = 0,
     spouse_savings_rrsp: float = 0,
     spouse_savings_tfsa: float = 0,
@@ -98,7 +99,7 @@ def calculate_sustainable_spend(
     income_split: bool | None = None,
     expected_returns: float = 5.0,
     cpi: float = 2.0,
-    allocation: float = 100.0,
+    allocation: float = 50.0,  # For couples: % of expenses covered by person 1 (default 50% = equal split)
     base_tfsa_amount: float = 7000.0,
     # Expense Planning
     survivor_expense_percent: float = 100.0,
@@ -110,7 +111,7 @@ def calculate_sustainable_spend(
     Args:
         current_age: Age today.
         retirement_age: Desired retirement age.
-        province: Canadian province code (e.g., 'ON', 'BC').
+        province: Canadian province and territory code (e.g., 'ON', 'BC').
         total_savings: (Optional) Lump sum of savings. Used if specific account values are not provided.
         savings_rrsp: (Optional) Specific amount in RRSP.
         savings_tfsa: (Optional) Specific amount in TFSA.
@@ -149,6 +150,7 @@ def calculate_sustainable_spend(
         spouse_name: (Optional) Name of spouse.
         spouse_age: (Optional) Provide this to trigger a COUPLE simulation.
         spouse_retirement_age: (Optional) Defaults to primary retirement age if missing.
+        spouse_death_age: (Optional) Spouse's life expectancy for planning (default 92).
         spouse_total_savings: (Optional) Lump sum savings for spouse.
         spouse_savings_rrsp: (Optional) Spouse RRSP.
         spouse_savings_tfsa: (Optional) Spouse TFSA.
@@ -172,16 +174,16 @@ def calculate_sustainable_spend(
         spouse_has_supplementary_death_benefit: (Optional) Spouse pension has death benefit.
         spouse_db_share_to_spouse: (Optional) Spouse pension share allocation.
         spouse_db_is_survivor_pension: (Optional) Spouse is receiving survivor pension.
-        spouse_rrsp_contribution: (Optional) Spouse annual RRSP contributions.
-        spouse_tfsa_contribution: (Optional) Spouse annual TFSA contributions.
-        spouse_non_registered_contribution: (Optional) Spouse annual non-registered contributions.
+        spouse_rrsp_contribution: (Optional) Spouse annual RRSP contributions (pre-retirement)  .
+        spouse_tfsa_contribution: (Optional) Spouse annual TFSA contributions (pre-retirement).
+        spouse_non_registered_contribution: (Optional) Spouse annual non-registered contributions (pre-retirement).
         spouse_non_registered_growth_capital_gains_pct: (Optional) Spouse % growth as capital gains.
         spouse_non_registered_dividend_yield_pct: (Optional) Spouse dividend yield %.
         spouse_non_registered_eligible_dividend_proportion_pct: (Optional) Spouse % eligible dividends.
         income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified).
         expected_returns: (Optional) Nominal expected portfolio return %.
         cpi: (Optional) Inflation rate %.
-        allocation: (Optional) Equity allocation %.
+        allocation: (Optional) For couples: % of household expenses covered by person 1 (default 50%). Person 2 covers the remaining %. Example: 60 means person 1 pays 60% of expenses, spouse pays 40%.
         base_tfsa_amount: (Optional) Annual new TFSA room.
         survivor_expense_percent: (Optional) % of expenses when one spouse passes (default 100%).
         expense_phases: (Optional) List of spending phases, e.g., [{'duration_years': 10, 'expense_change_pct': 0}].
@@ -284,7 +286,7 @@ def calculate_sustainable_spend(
             "name": spouse_name,
             "current_age": p2_age,
             "retirement_age": p2_retire,
-            "death_age": death_age,
+            "death_age": spouse_death_age,
             "rrsp": p2_rrsp,
             "tfsa": p2_tfsa,
             "non_registered": p2_non_reg,
