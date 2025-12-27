@@ -221,6 +221,40 @@ def test_spouse_symmetry():
         print(f"✅ PASSED - Max spend: ${result.get('max_monthly_spend', 0):,.2f}/month ({result.get('mode', 'N/A')})")
         return True
 
+def test_additional_events():
+    """Test additional income/expense events"""
+    result = call_mcp_tool({
+        "current_age": 60,
+        "retirement_age": 65,
+        "savings_rrsp": 500000,
+        "additional_events": [
+            {
+                "year": 2026,
+                "type": "income",
+                "amount": 50000.0,
+                "is_cpi_indexed": False,
+                "tax_treatment": "non_taxable"
+            }
+        ],
+        "spouse_age": 58,
+        "spouse_additional_events": [
+            {
+                "year": 2027,
+                "type": "expense",
+                "amount": 20000.0,
+                "is_cpi_indexed": True
+            }
+        ],
+        "province": "ON"
+    }, "Test 7: Additional Income/Expense Events")
+    
+    if "error" in result:
+        print(f"❌ FAILED: {result['error']}")
+        return False
+    else:
+        print(f"✅ PASSED - Max spend: ${result.get('max_monthly_spend', 0):,.2f}/month")
+        return True
+
 def main():
     """Run all tests"""
     print("=" * 60)
@@ -237,7 +271,8 @@ def main():
         test_db_pension_advanced,
         test_survivor_expense,
         test_expense_phases,
-        test_spouse_symmetry
+        test_spouse_symmetry,
+        test_additional_events
     ]
     
     results = []

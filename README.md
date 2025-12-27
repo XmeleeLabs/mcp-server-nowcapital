@@ -7,7 +7,7 @@ It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian reti
 *   **Precision Math**: Calculates sustainable monthly spending with backend tax details.
 *   **Smart Defaults**: Translates simple prompts ("I have $500k") into tax-optimized account splits.
 *   **Couple Support**: Automatic optimizations for spousal income splitting.
-*   **Advanced Mode**: Supports specific Acet allocations (RRSP/TFSA/Non-Reg), Actuarial Death Age, and Adjusted Cost Base (ACB).
+*   **Advanced Mode**: Supports couple expense phases (Go-Go, Slow-Go, No-Go), DB Pension, LIRA, and Split allocation strategies (RRSP/TFSA/Non-Reg).
 
 ## Requirements
 *   Python 3.10+
@@ -41,7 +41,7 @@ Add this entry (replace the **path** and **API Key**):
         "C:\\Users\\YourName\\path\\to\\mcp-server-nowcapital\\server.py"
       ],
       "env": {
-        "NOWCAPITAL_API_KEY": "sk_your_key_here",
+        "NOWCAPITAL_API_KEY": "your_key_here",
         "NOWCAPITAL_API_BASE_URL": "https://api.nowcapital.ca"
       }
     }
@@ -100,16 +100,16 @@ pip install -r requirements.txt
 ```bash
 # Windows (PowerShell)
 $env:NOWCAPITAL_API_KEY="your_key_here"
-$env:NOWCAPITAL_API_BASE_URL="http://your-backend-url"
+$env:NOWCAPITAL_API_BASE_URL="http://nowcapital-backend-url"
 fastmcp dev server.py
 
 # Mac/Linux
 export NOWCAPITAL_API_KEY="your_key_here"
-export NOWCAPITAL_API_BASE_URL="http://your-backend-url" # or https://api.nowcapital.ca
+export NOWCAPITAL_API_BASE_URL="http://nowcapital-backend-url" # or https://api.nowcapital.ca
 fastmcp dev server.py
 ```
-## Stremable HTTP support
-python server.py --transport http -- port 8000 --host 0.0.0.0
+## Streamable HTTP support
+python server.py --transport http --port 8000 --host 0.0.0.0
 
 ### Configue gemini cli client
 You need to tell the Gemini CLI where to find this HTTP endpoint. You do this by editing the settings.json file.
@@ -134,7 +134,7 @@ JSON
   "mcpServers": {
     "nowcapital-retirement": {
       "type": "streamable",
-      "url": "http://192.168.1.58:8000/mcp"
+      "url": "http://0.0.0.0:8000/mcp"
     }
   }
 }

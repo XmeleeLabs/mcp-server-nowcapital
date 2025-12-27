@@ -54,6 +54,8 @@ def calculate_sustainable_spend(
     non_registered_growth_capital_gains_pct: float = 90.0,
     non_registered_dividend_yield_pct: float = 2.0,
     non_registered_eligible_dividend_proportion_pct: float = 70.0,
+    # Additional Events (Person 1)
+    additional_events: list[dict] | None = None,
     
     # Couple Options (Person 2)
     spouse_name: str = "Spouse",
@@ -98,6 +100,8 @@ def calculate_sustainable_spend(
     spouse_non_registered_growth_capital_gains_pct: float = 90.0,
     spouse_non_registered_dividend_yield_pct: float = 2.0,
     spouse_non_registered_eligible_dividend_proportion_pct: float = 70.0,
+    # Additional Events (Person 2/Spouse)
+    spouse_additional_events: list[dict] | None = None,
     
     # Global/Scenario Inputs
     income_split: bool | None = None,
@@ -105,7 +109,6 @@ def calculate_sustainable_spend(
     cpi: float = 2.0,
     allocation: float = 50.0,  # For couples: % of expenses covered by person 1 (default 50% = equal split)
     base_tfsa_amount: float = 7000.0,
-    # Expense Planning
     survivor_expense_percent: float = 100.0,
     expense_phases: list[dict] | None = None
 ) -> dict:
@@ -153,6 +156,8 @@ def calculate_sustainable_spend(
         non_registered_growth_capital_gains_pct: (Optional) % of growth treated as capital gains (vs interest).
         non_registered_dividend_yield_pct: (Optional) % of non-reg balance that is dividend yield.
         non_registered_eligible_dividend_proportion_pct: (Optional) % of dividends that are eligible.
+        additional_events: (Optional) List of additional income/expense events for Person 1.
+             Each event is a dict: {'year': int, 'type': 'income'|'expense', 'amount': float, 'is_cpi_indexed': bool, 'tax_treatment': 'non_taxable'|'employment'|'self_employment'}.
         spouse_name: (Optional) Name of spouse.
         spouse_age: (Optional) Provide this to trigger a COUPLE simulation.
         spouse_retirement_age: (Optional) Defaults to primary retirement age if missing.
@@ -190,6 +195,7 @@ def calculate_sustainable_spend(
         spouse_non_registered_growth_capital_gains_pct: (Optional) Spouse % growth as capital gains.
         spouse_non_registered_dividend_yield_pct: (Optional) Spouse dividend yield %.
         spouse_non_registered_eligible_dividend_proportion_pct: (Optional) Spouse % eligible dividends.
+        spouse_additional_events: (Optional) List of additional income/expense events for Spouse. See additional_events for structure.
         income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified). Allows splitting eligible pension income between spouses to minimize household taxes. Only applies to RRIF/LIF income and DB pensions (age 65+). 
         expected_returns: (Optional) Nominal expected portfolio return %.
         cpi: (Optional) Inflation rate %.
@@ -360,6 +366,14 @@ def calculate_sustainable_spend(
     # Add expense_phases if provided
     if expense_phases is not None:
         payload["inputs"]["expense_phases"] = expense_phases
+
+    # Add additional_events if provided
+    if additional_events is not None:
+        payload["person1_ui"]["additional_events"] = additional_events
+        
+    if spouse_additional_events is not None:
+        payload["person2_ui"]["additional_events"] = spouse_additional_events
+
 
     # 4. Call the Backend API
     try:
