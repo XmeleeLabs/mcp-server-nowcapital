@@ -63,7 +63,7 @@ Add this entry (replace the **path** and **API Key**):
         "/absolute/path/to/mcp-server-nowcapital/server.py"
       ],
       "env": {
-        "NOWCAPITAL_API_KEY": "sk_your_key_here",
+        "NOWCAPITAL_API_KEY": "your_key_here",
         "NOWCAPITAL_API_BASE_URL": "https://api.nowcapital.ca"
       }
     }
@@ -99,12 +99,42 @@ pip install -r requirements.txt
 ### Run Development Inspector
 ```bash
 # Windows (PowerShell)
-$env:NOWCAPITAL_API_KEY="sk_test_key"
+$env:NOWCAPITAL_API_KEY="your_key_here"
 $env:NOWCAPITAL_API_BASE_URL="http://your-backend-url"
 fastmcp dev server.py
 
 # Mac/Linux
-export NOWCAPITAL_API_KEY="sk_test_key"
+export NOWCAPITAL_API_KEY="your_key_here"
 export NOWCAPITAL_API_BASE_URL="http://your-backend-url" # or https://api.nowcapital.ca
 fastmcp dev server.py
 ```
+## Stremable HTTP support
+python server.py --transport http -- port 8000 --host 0.0.0.0
+
+### Configue gemini cli client
+You need to tell the Gemini CLI where to find this HTTP endpoint. You do this by editing the settings.json file.
+
+Mac/Linux: ~/.gemini/settings.json
+
+Windows: %USERPROFILE%\.gemini\settings.json
+
+Add (or update) the mcpServers block to use httpUrl instead of command.
+
+JSON
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "httpUrl": "http://0.0.0.0:8000/mcp"
+    }
+  }
+}
+
+### Configure anything llm
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "type": "streamable",
+      "url": "http://192.168.1.58:8000/mcp"
+    }
+  }
+}

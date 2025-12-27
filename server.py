@@ -6,7 +6,7 @@ import sys
 from fastmcp import FastMCP
 
 # Initialize FastMCP Server
-mcp = FastMCP("NowCapitalRetirement Planner")
+mcp = FastMCP("NowCapital Retirement Planner")
 
 @mcp.tool()
 def calculate_sustainable_spend(
@@ -122,7 +122,7 @@ def calculate_sustainable_spend(
         savings_non_reg: (Optional) Specific amount in Non-Registered accounts.
         name: (Optional) Name of the primary person.
         death_age: (Optional) Age of death for planning (default 92).
-        non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets.
+        non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets. Used to calculate capital gains tax. If not provided, assumes ACB equals current balance (no unrealized gains).
         lira: (Optional) Locked-in Retirement Account balance.
         tfsa_contribution_room: (Optional) Available TFSA contribution room.
         rrsp_contribution_room: (Optional) Available RRSP contribution room.
@@ -135,21 +135,21 @@ def calculate_sustainable_spend(
         db_start_age: (Optional) Age DB pension starts.
         db_index_before_retirement: (Optional) Does DB pension index to inflation before retirement?
         db_index_after_retirement: (Optional) Annual indexing % after retirement (e.g. 0.0 for no indexing).
-        enable_rrsp_meltdown: (Optional) Strategy to withdraw extra RRSP early to reduce tax.
+        enable_rrsp_meltdown: (Optional) Strategy to withdraw RRSP funds earlier than minimum requirements to reduce future RRIF minimums and OAS clawback risk.
         lif_conversion_age: (Optional) Age to convert LIRA to LIF (max 71).
         rrif_conversion_age: (Optional) Age to convert RRSP to RRIF (max 71).
         lif_type: (Optional) LIF type (default 1).
         db_index_after_retirement_to_cpi: (Optional) Index DB to CPI after retirement instead of fixed %.
-        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback when CPP starts (0.0-1.0).
+        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback when CPP starts (0.0-1.0). e.g., 1.0 means the full bridge benefit is clawed back dollar-for-dollar when CPP starts; 0.5 means 50% clawback.
         db_survivor_benefit_percentage: (Optional) % of pension continuing to survivor (e.g., 0.60).
         pension_plan_type: (Optional) Pension plan type.
         has_10_year_guarantee: (Optional) Pension has 10-year guarantee.
         has_supplementary_death_benefit: (Optional) Pension has death benefit.
         db_share_to_spouse: (Optional) Pension share to spouse.
         db_is_survivor_pension: (Optional) Whether this is a survivor pension.
-        rrsp_contribution: (Optional) Annual RRSP contributions before retirement.
-        tfsa_contribution: (Optional) Annual TFSA contributions before retirement.
-        non_registered_contribution: (Optional) Annual non-registered contributions before retirement.
+        rrsp_contribution: (Optional) Annual RRSP contributions made BEFORE retirement (stops at retirement_age).
+        tfsa_contribution: (Optional) Annual TFSA contributions made BEFORE retirement (stops at retirement_age).
+        non_registered_contribution: (Optional) Annual non-registered contributions made BEFORE retirement (stops at retirement_age).
         non_registered_growth_capital_gains_pct: (Optional) % of growth treated as capital gains (vs interest).
         non_registered_dividend_yield_pct: (Optional) % of non-reg balance that is dividend yield.
         non_registered_eligible_dividend_proportion_pct: (Optional) % of dividends that are eligible.
@@ -161,7 +161,7 @@ def calculate_sustainable_spend(
         spouse_savings_rrsp: (Optional) Spouse RRSP.
         spouse_savings_tfsa: (Optional) Spouse TFSA.
         spouse_savings_non_reg: (Optional) Spouse Non-Reg.
-        spouse_non_reg_acb: (Optional) Spouse Non-Reg ACB.
+        spouse_non_reg_acb: (Optional) Spouse Non-Reg ACB. Used to calculate capital gains tax. If not provided, assumes ACB equals current balance (no unrealized gains).
         spouse_lira: (Optional) Spouse LIRA.
         spouse_cpp_start_age: (Optional) Spouse CPP start age.
         spouse_oas_start_age: (Optional) Spouse OAS start age.
@@ -172,31 +172,31 @@ def calculate_sustainable_spend(
         spouse_db_start_age: (Optional) Spouse DB start age.
         spouse_db_index_before_retirement: (Optional) Spouse DB indexes before retirement.
         spouse_db_index_after_retirement: (Optional) Spouse DB indexing % after retirement.
-        spouse_enable_rrsp_meltdown: (Optional) Spouse RRSP meltdown strategy.
+        spouse_enable_rrsp_meltdown: (Optional) Spouse RRSP meltdown strategy. Withdraw RRSP funds earlier than minimum requirements to reduce future RRIF minimums and OAS clawback risk.
         spouse_lif_conversion_age: (Optional) Spouse LIRA to LIF conversion age.
         spouse_rrif_conversion_age: (Optional) Spouse RRSP to RRIF conversion age.
         spouse_lif_type: (Optional) Spouse LIF type.
         spouse_db_index_after_retirement_to_cpi: (Optional) Spouse DB indexes to CPI after retirement.
-        spouse_db_cpp_clawback_fraction: (Optional) Spouse DB bridge benefit clawback (0.0-1.0).
+        spouse_db_cpp_clawback_fraction: (Optional) Spouse DB bridge benefit clawback (0.0-1.0). e.g., 1.0 means the full bridge benefit is clawed back
         spouse_db_survivor_benefit_percentage: (Optional) Spouse DB survivor benefit % (e.g., 0.60).
         spouse_pension_plan_type: (Optional) Spouse pension plan type.
         spouse_has_10_year_guarantee: (Optional) Spouse pension has 10-year guarantee.
         spouse_has_supplementary_death_benefit: (Optional) Spouse pension has death benefit.
         spouse_db_share_to_spouse: (Optional) Spouse pension share allocation.
         spouse_db_is_survivor_pension: (Optional) Spouse is receiving survivor pension.
-        spouse_rrsp_contribution: (Optional) Spouse annual RRSP contributions (pre-retirement)  .
-        spouse_tfsa_contribution: (Optional) Spouse annual TFSA contributions (pre-retirement).
-        spouse_non_registered_contribution: (Optional) Spouse annual non-registered contributions (pre-retirement).
+        spouse_rrsp_contribution: (Optional) Spouse annual RRSP contributions (pre-retirement). Stops at spouse_retirement_age.
+        spouse_tfsa_contribution: (Optional) Spouse annual TFSA contributions (pre-retirement). Stops at spouse_retirement_age.
+        spouse_non_registered_contribution: (Optional) Spouse annual non-registered contributions (pre-retirement). Stops at spouse_retirement_age.
         spouse_non_registered_growth_capital_gains_pct: (Optional) Spouse % growth as capital gains.
         spouse_non_registered_dividend_yield_pct: (Optional) Spouse dividend yield %.
         spouse_non_registered_eligible_dividend_proportion_pct: (Optional) Spouse % eligible dividends.
-        income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified).
+        income_split: (Optional) Enable pension income splitting (defaults to True for couples if not specified). Allows splitting eligible pension income between spouses to minimize household taxes. Only applies to RRIF/LIF income and DB pensions (age 65+). 
         expected_returns: (Optional) Nominal expected portfolio return %.
         cpi: (Optional) Inflation rate %.
-        allocation: (Optional) For couples: % of household expenses covered by person 1 (default 50%). Person 2 covers the remaining %. Example: 60 means person 1 pays 60% of expenses, spouse pays 40%.
+        allocation: (Optional) For couples: % of household expenses covered by person 1 (default 50%). Person 2 covers the remaining %. Example: 60 means person 1 pays 60% of expenses, spouse pays 40%. This determines how household expenses are split for tax optimization purposes. 
         base_tfsa_amount: (Optional) Annual new TFSA room.
-        survivor_expense_percent: (Optional) % of expenses when one spouse passes (default 100%).
-        expense_phases: (Optional) List of spending phases, e.g., [{'duration_years': 10, 'expense_change_pct': 0}].
+        survivor_expense_percent: (Optional) % of expenses when one spouse passes (default 100%). "100% means expenses stay the same when one spouse passes; 70% means expenses drop to 70% of couple amount.
+        expense_phases: (Optional) List of spending phases, e.g., [{'duration_years': 10, 'expense_change_pct': -2}]. Each expense phase percentage is applied ANNUALLY and compounds over the duration. The change is relative to the previous year's spending level, creating an upward or downward slope. The returned max_monthly_spend represents the spending level in YEAR 1 of retirement, with subsequent years adjusted according to the expense phases. Example: If max_monthly_spend returns $10,000 with expense_phases=[{'duration_years': 10, 'expense_change_pct': -2}], you spend $10,000/month in year 1, $9,800 in year 2, $9,604 in year 3, etc., decreasing 2% annually for 10 years (approximately 18% total decrease by year 10). Use positive values to increase spending over time, negative to decrease, and 0 to maintain flat spending. All amounts are inflation-adjusted.
     """
     
     # 1. Authentication Check
@@ -417,8 +417,40 @@ def calculate_sustainable_spend(
         return {"error": f"System Error: Could not connect to calculations engine ({str(e)})."}
 
 if __name__ == "__main__":
-    # Allow running in SSE mode for debugging or direct HTTP access
-    if "sse" in sys.argv:
-        mcp.run(transport="sse")
+    import argparse
+    
+    # Set up argument parsing to switch between modes
+    parser = argparse.ArgumentParser(description="NowCapital MCP Server")
+    parser.add_argument(
+        "--transport", 
+        default="stdio", 
+        choices=["stdio", "http", "sse"], 
+        help="Transport mode: 'stdio' (default), 'http' (Streamable), or 'sse' (Legacy)"
+    )
+    parser.add_argument(
+        "--port", 
+        type=int, 
+        default=8000, 
+        help="Port to bind to (only for http/sse)"
+    )
+    parser.add_argument(
+        "--host", 
+        default="0.0.0.0", 
+        help="Host to bind to (only for http/sse)"
+    )
+    
+    args = parser.parse_args()
+
+    if args.transport == "http":
+        print(f"🚀 Starting Streamable HTTP Server on {args.host}:{args.port}")
+        print(f"🔗 MCP Endpoint: http://{args.host}:{args.port}/mcp")
+        mcp.run(transport="http", host=args.host, port=args.port)
+        
+    elif args.transport == "sse":
+        print(f"📡 Starting SSE Server (Legacy) on {args.host}:{args.port}")
+        print(f"🔗 MCP Endpoint: http://{args.host}:{args.port}/sse")
+        mcp.run(transport="sse", host=args.host, port=args.port)
+        
     else:
-        mcp.run()
+        # Default: Run in standard input/output mode
+        mcp.run(transport="stdio")
