@@ -1,17 +1,66 @@
-
 import os
 import requests
 import json
 import sys
-from fastmcp import FastMCP
+import argparse
+from fastmcp import FastMCP, Context
 
 # Initialize FastMCP Server
 mcp = FastMCP("NowCapital Retirement Planner")
+
+def get_api_key(ctx: Context | None, user_arg: str | None) -> str | None:
+    """
+    Retrieves the API Key using a hybrid approach.
+    Priority:
+    1. Explicit Argument (if user provided it in chat)
+    2. HTTP Headers via Context (if FastMCP gateway forwards them)
+    3. Environment Variable (server-side fallback)
+    """
+    # 1. Explicit Argument
+    if user_arg:
+        return user_arg
+
+    # 2. Context / Headers (The "FastMCP Gateway" method)
+    if ctx:
+        # Different FastMCP implementations/versions expose headers differently.
+        # We check the most common locations for forwarded headers.
+        
+        # Check A: Direct 'headers' attribute
+        headers = getattr(ctx, "headers", None)
+        
+        # Check B: 'meta' dictionary (common in MCP for request metadata)
+        if not headers and hasattr(ctx, "meta"):
+            headers = ctx.meta.get("headers")
+            
+        # Check C: 'request' object
+        if not headers and hasattr(ctx, "request") and hasattr(ctx.request, "headers"):
+            headers = ctx.request.headers
+
+        if headers:
+            # Look for standard Auth headers
+            # Case-insensitive lookup is best, but dicts are usually case-sensitive.
+            # We try common variations.
+            for key, val in headers.items():
+                k_lower = key.lower()
+                if k_lower == "authorization":
+                    # Remove 'Bearer ' prefix if present
+                    return val.replace("Bearer ", "").replace("bearer ", "").strip()
+                if k_lower == "x-api-key":
+                    return val.strip()
+
+    # 3. Environment Variable (Local/Server-side key)
+    return os.environ.get("NOWCAPITAL_API_KEY")
 
 @mcp.tool()
 def calculate_sustainable_spend(
     current_age: int, 
     retirement_age: int, 
+    # INJECTION: We request the Context object to access HTTP headers
+    ctx: Context = None,
+    # AUTHENTICATION: Optional explicit argument
+    user_api_key: str | None = None,
+    
+    # Standard Args
     province: str = "ON",
     total_savings: float = 0,
     savings_rrsp: float = 0,
@@ -118,6 +167,7 @@ def calculate_sustainable_spend(
     Args:
         current_age: Age today.
         retirement_age: Desired retirement age.
+        user_api_key: (Optional) API Key for authentication. Required if running remotely via HTTP.
         province: Canadian province and territory code (e.g., 'ON', 'BC').
         total_savings: (Optional) Lump sum of savings. Used if specific account values are not provided.
         savings_rrsp: (Optional) Specific amount in RRSP.
@@ -205,14 +255,18 @@ def calculate_sustainable_spend(
         expense_phases: (Optional) List of spending phases, e.g., [{'duration_years': 10, 'expense_change_pct': -2}]. Each expense phase percentage is applied ANNUALLY and compounds over the duration. The change is relative to the previous year's spending level, creating an upward or downward slope. The returned max_monthly_spend represents the spending level in YEAR 1 of retirement, with subsequent years adjusted according to the expense phases. Example: If max_monthly_spend returns $10,000 with expense_phases=[{'duration_years': 10, 'expense_change_pct': -2}], you spend $10,000/month in year 1, $9,800 in year 2, $9,604 in year 3, etc., decreasing 2% annually for 10 years (approximately 18% total decrease by year 10). Use positive values to increase spending over time, negative to decrease, and 0 to maintain flat spending. All amounts are inflation-adjusted.
     """
     
-    # 1. Authentication Check
-    api_key = os.environ.get("NOWCAPITAL_API_KEY")
-    if not api_key:
-        return {"error": "API Key missing. Please set the NOWCAPITAL_API_KEY environment variable."}
+    # 1. Authentication Check (Hybrid approach)
+    final_api_key = get_api_key(ctx, user_api_key)
+
+    if not final_api_key:
+        return {
+            "error": "Authentication Failed. Please provide your 'user_api_key' as an argument, "
+                     "OR ensure your client forwards the 'Authorization' or 'X-API-KEY' header."
+        }
 
     api_url = os.environ.get("NOWCAPITAL_API_BASE_URL")
     if not api_url:
-        return {"error": "API URL missing. Please set the NOWCAPITAL_API_BASE_URL environment variable."}
+        return {"error": "API URL missing. Please set the NOWCAPITAL_API_BASE_URL environment variable on the server."}
 
     # Helper to calculate splits
     def distribute_savings(total, r, t, n):
@@ -380,7 +434,7 @@ def calculate_sustainable_spend(
         response = requests.post(
             f"{api_url}/calculate-max-spend",
             json=payload,
-            headers={"X-API-Key": api_key},
+            headers={"X-API-Key": final_api_key},
             timeout=10
         )
         
@@ -425,13 +479,12 @@ def calculate_sustainable_spend(
 
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
-             return {"error": "Access Denied: Your NOWCAPITAL_API_KEY is invalid or missing permission."}
+             return {"error": "Access Denied: Your API Key is invalid or missing permission."}
         return {"error": f"Simulation Failed: The backend returned an error ({e})."}
     except Exception as e:
         return {"error": f"System Error: Could not connect to calculations engine ({str(e)})."}
 
 if __name__ == "__main__":
-    import argparse
     
     # Set up argument parsing to switch between modes
     parser = argparse.ArgumentParser(description="NowCapital MCP Server")

@@ -124,7 +124,9 @@ JSON
 {
   "mcpServers": {
     "nowcapital-retirement": {
-      "httpUrl": "http://0.0.0.0:8000/mcp"
+      "httpUrl": "https://mcp.nowcapital.ca/mcp"
+      "headers": {
+        "X-API-Key": "NOWCAPITAL_API_KEY_HERE"
     }
   }
 }
