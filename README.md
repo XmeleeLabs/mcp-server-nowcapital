@@ -100,12 +100,12 @@ pip install -r requirements.txt
 ```bash
 # Windows (PowerShell)
 $env:NOWCAPITAL_API_KEY="your_key_here"
-$env:NOWCAPITAL_API_BASE_URL="http://nowcapital-backend-url"
+$env:NOWCAPITAL_API_BASE_URL="https://api.nowcapital.ca"
 fastmcp dev server.py
 
 # Mac/Linux
 export NOWCAPITAL_API_KEY="your_key_here"
-export NOWCAPITAL_API_BASE_URL="http://nowcapital-backend-url" # or https://api.nowcapital.ca
+export NOWCAPITAL_API_BASE_URL="https://api.nowcapital.ca"
 fastmcp dev server.py
 ```
 ## Streamable HTTP support
@@ -136,7 +136,7 @@ JSON
   "mcpServers": {
     "nowcapital-retirement": {
       "type": "streamable",
-      "url": "http://0.0.0.0:8000/mcp"
+      "url": "https://mcp.nowcapital.ca/mcp"
     }
   }
 }
