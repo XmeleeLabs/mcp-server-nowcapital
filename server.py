@@ -100,9 +100,9 @@ def calculate_sustainable_spend(
     tfsa_contribution: float = 0.0,
     non_registered_contribution: float = 0.0,
     # Investment Assumptions (Person 1 & Global)
-    non_registered_growth_capital_gains_pct: float = 90.0,
-    non_registered_dividend_yield_pct: float = 2.0,
-    non_registered_eligible_dividend_proportion_pct: float = 70.0,
+    non_registered_growth_capital_gains_pct: float = 100.0,
+    non_registered_dividend_yield_pct: float = 0.0,
+    non_registered_eligible_dividend_proportion_pct: float = 0.0,
     # Additional Events (Person 1)
     additional_events: list[dict] | None = None,
     
@@ -146,9 +146,9 @@ def calculate_sustainable_spend(
     spouse_tfsa_contribution: float = 0.0,
     spouse_non_registered_contribution: float = 0.0,
     # Investment Assumptions (Person 2/Spouse)
-    spouse_non_registered_growth_capital_gains_pct: float = 90.0,
-    spouse_non_registered_dividend_yield_pct: float = 2.0,
-    spouse_non_registered_eligible_dividend_proportion_pct: float = 70.0,
+    spouse_non_registered_growth_capital_gains_pct: float = 100.0,
+    spouse_non_registered_dividend_yield_pct: float = 0.0,
+    spouse_non_registered_eligible_dividend_proportion_pct: float = 0.0,
     # Additional Events (Person 2/Spouse)
     spouse_additional_events: list[dict] | None = None,
     
