@@ -1,7 +1,7 @@
-# NowCapital.ca Retirement MCP Server
+# NowCapital.ca Retirement Planner MCP Server
 
 This is a **Model Context Protocol (MCP)** server for the **NowCapital.ca Retirement Planning API**.
-It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning.
+It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning. Obtain API keys at NowCapital.ca or in Android https://play.google.com/store/apps/details?id=ca.nowcapital.app
 
 ## Features
 *   **Precision Math**: Calculates sustainable monthly spending with backend tax details.
@@ -63,7 +63,7 @@ Add this entry (replace the **path** and **API Key**):
         "/absolute/path/to/mcp-server-nowcapital/server.py"
       ],
       "env": {
-        "NOWCAPITAL_API_KEY": "your_key_here",
+        "NOWCAPITAL_API_KEY": "your_nowcapital_api_key_here",
         "NOWCAPITAL_API_BASE_URL": "https://api.nowcapital.ca"
       }
     }
@@ -111,8 +111,9 @@ fastmcp dev server.py
 ## Streamable HTTP support
 python server.py --transport http --port 8000 --host 0.0.0.0
 
-### Configue gemini cli client
+### Configure gemini cli client
 You need to tell the Gemini CLI where to find this HTTP endpoint. You do this by editing the settings.json file.
+Gemini may find the API KEY in it's settings.json file, if not, you can specify the API KEY in the actual chatbot request.
 
 Mac/Linux: ~/.gemini/settings.json
 
@@ -132,6 +133,9 @@ JSON
 }
 
 ### Configure anything llm
+Specify the API KEY in the chatbot request.
+
+JSON
 {
   "mcpServers": {
     "nowcapital-retirement": {
