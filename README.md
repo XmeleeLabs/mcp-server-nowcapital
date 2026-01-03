@@ -1,7 +1,8 @@
 # NowCapital.ca Retirement Planner MCP Server
 
 This is a **Model Context Protocol (MCP)** server for the **NowCapital.ca Retirement Planning API**.
-It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning. Obtain API keys at https://NowCapital.ca or in Android https://play.google.com/store/apps/details?id=ca.nowcapital.app
+It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning.
+Obtain API keys at https://NowCapital.ca or in Android https://play.google.com/store/apps/details?id=ca.nowcapital.app
 
 ## **CONTACT US**
 
@@ -84,6 +85,7 @@ Add this entry (replace the **path** and **API Key**):
 ### 2. Verify
 Restart Claude Desktop. You should see the 🔌 icon indicating the tool is connected.
 Try asking: *"Calculate my max retirement spend if I have $600k in savings and I am 55 years old."*
+Try asking: *"What are the full retirement calculation defaults for single or a couple that I can modify?"*
 
 ## Standard Installation (No `uv`)
 If you prefer standard pip:
