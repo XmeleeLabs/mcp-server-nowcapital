@@ -1,7 +1,17 @@
 # NowCapital.ca Retirement Planner MCP Server
 
 This is a **Model Context Protocol (MCP)** server for the **NowCapital.ca Retirement Planning API**.
-It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning. Obtain API keys at NowCapital.ca or in Android https://play.google.com/store/apps/details?id=ca.nowcapital.app
+It allows AI Agents (like Claude, Gemini, etc.) to perform complex Canadian retirement simulations with high-precision tax logic, government benefit modeling (CPP/OAS), and longevity planning. Obtain API keys at https://NowCapital.ca or in Android https://play.google.com/store/apps/details?id=ca.nowcapital.app
+
+## **CONTACT US**
+
+Need help or have questions?
+
+* Email: support@nowcapital.ca  
+* YouTube: [@NowCapital-ca](https://www.youtube.com/@NowCapital-ca)  
+* Facebook: [NowCapital](https://www.facebook.com/profile.php?id=61584898631313)  
+* Instagram: [@nowcapital.ca](https://www.instagram.com/nowcapital.ca?utm_source=qr&igsh=dmZmbGlvMnlxb3Fq)
+
 
 ## Features
 *   **Precision Math**: Calculates sustainable monthly spending with backend tax details.
