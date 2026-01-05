@@ -391,7 +391,81 @@ def calculate_sustainable_spend(
     expense_phases: list[dict] | None = None
 ) -> dict:
     """
-    Calculates the maximum monthly amount a user (and optional spouse) can spend in retirement.
+    Calculates the maximum sustainable monthly spending (after-tax) for a user (and optional spouse) until death.
+    Use this tool when the user asks "How much can I spend?" or wants a single summary number.
+
+    Args:
+        # --- Basic Information ---
+        current_age: Age today (e.g., 60).
+        retirement_age: Desired retirement age (e.g., 65).
+        province: Canadian province code: 'ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'PE', 'NL'.
+        total_savings: (Optional) Lump sum of savings. Used if specific account values (RRSP/TFSA) are not provided.
+        name: (Optional) Name of the primary person.
+        death_age: (Optional) Age of death for planning (default 92).
+
+        # --- Savings Accounts ---
+        savings_rrsp: (Optional) RRSP balance.
+        savings_tfsa: (Optional) TFSA balance.
+        savings_non_reg: (Optional) Non-Registered (Cash/Margin) balance.
+        lira: (Optional) Locked-in Retirement Account (LIRA) balance.
+        non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets. Used to calculate capital gains tax. If not provided, assumes ACB equals current balance (no unrealized gains).
+
+        # --- Annual Contributions (Pre-Retirement Only) ---
+        rrsp_contribution: (Optional) Annual RRSP contribution (stops at retirement_age).
+        tfsa_contribution: (Optional) Annual TFSA contribution (stops at retirement_age).
+        non_registered_contribution: (Optional) Annual Non-Reg contribution (stops at retirement_age).
+        rrsp_contribution_room: (Optional) Available RRSP contribution room.
+        tfsa_contribution_room: (Optional) Available TFSA contribution room.
+
+        # --- Government Benefits ---
+        cpp_start_age: (Optional) Age to start CPP (Standard is 65. Range 60-70).
+        oas_start_age: (Optional) Age to start OAS (Standard is 65. Range 65-70).
+        base_cpp_amount: (Optional) Expected annual CPP amount at age 65 (max ~$16k).
+        base_oas_amount: (Optional) Expected annual OAS amount at age 65 (max ~$8k).
+
+        # --- Defined Benefit (DB) Pension ---
+        db_enabled: (Optional) Set to True if Person 1 has a DB pension.
+        db_pension_income: (Optional) Annual DB pension income (in future dollars at start age).
+        db_start_age: (Optional) Age DB pension payments begin.
+        db_index_before_retirement: (Optional) True if pension indexes to inflation before retirement.
+        db_index_after_retirement: (Optional) Annual indexing % after retirement (e.g., 2.0 for 2%).
+        db_index_after_retirement_to_cpi: (Optional) True to index strictly to CPI after retirement.
+        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback fraction (0.0 to 1.0). 1.0 means the bridge benefit is fully removed when CPP starts.
+        db_survivor_benefit_percentage: (Optional) % of pension income the spouse receives after death (e.g., 0.60 for 60%).
+
+        # --- Investment Assumptions ---
+        expected_returns: (Optional) Nominal expected portfolio return % (default 4.5).
+        cpi: (Optional) Inflation rate % (default 2.3).
+        non_registered_growth_capital_gains_pct: (Optional) % of Non-Reg return that is Capital Gains (vs Interest/Dividends). Default 100.0.
+        non_registered_dividend_yield_pct: (Optional) % of Non-Reg balance that is dividend yield (default 0.0).
+
+        # --- Advanced Strategy ---
+        enable_rrsp_meltdown: (Optional) True to withdraw extra RRSP funds early to reduce future tax liability.
+        income_split: (Optional) True to enable pension income splitting between spouses (Optimizes taxes). Default True for couples.
+        lif_conversion_age: (Optional) Age to convert LIRA to LIF (max 71).
+        rrif_conversion_age: (Optional) Age to convert RRSP to RRIF (max 71).
+
+        # --- Complex Cash Flow Events ---
+        additional_events: (Optional) List of dictionaries for one-time or recurring cash flows.
+            Structure: [{'year': int, 'type': 'income'|'expense', 'amount': float, 'is_cpi_indexed': bool, 'tax_treatment': 'non_taxable'|'employment'|'self_employment'}]
+            Example: [{'year': 2030, 'type': 'income', 'amount': 50000, 'is_cpi_indexed': False, 'tax_treatment': 'non_taxable'}]
+
+        expense_phases: (Optional) List of spending phases that adjust the sustainable spend over time.
+            Structure: [{'duration_years': int, 'expense_change_pct': float}]
+            Note: expense_change_pct compounds ANNUALLY. -2.0 means spending drops by 2% every year for the duration.
+
+        # --- Spouse / Couple Inputs ---
+        spouse_age: (Optional) Providing this TRIGGERS a couple simulation.
+        spouse_name: (Optional) Spouse's name.
+        spouse_retirement_age: (Optional) Spouse's retirement age (defaults to Person 1's if missing).
+        spouse_total_savings: (Optional) Spouse's lump sum savings.
+        spouse_savings_rrsp: (Optional) Spouse's RRSP balance.
+        spouse_savings_tfsa: (Optional) Spouse's TFSA balance.
+        spouse_savings_non_reg: (Optional) Spouse's Non-Reg balance.
+        spouse_db_enabled: (Optional) True if Spouse has a DB pension.
+        spouse_db_pension_income: (Optional) Spouse's DB annual income.
+        allocation: (Optional) Percentage of total household expenses covered by Person 1 (0-100). Default 50.0.
+        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0). 70.0 means expenses drop by 30%.
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -531,8 +605,82 @@ def calculate_detailed_spend_plan(
     expense_phases: list[dict] | None = None
 ) -> dict:
     """
-    Calculates detailed year-by-year cash flow analysis.
-    Returns yearly data in CSV format to minimize token usage.
+    Calculates a detailed year-by-year retirement plan, returning data in CSV format.
+    Use this tool when the user asks for "detailed cash flow," "yearly breakdown," "tax details," or "tables."
+    
+    Returns:
+        A dictionary containing 'max_spend_monthly' and 'person1_yearly_data_csv' (and person2 if couple).
+        The CSV data contains columns for Age, Income, Taxes, Account Withdrawals, and Net Income for every year.
+
+    Args:
+        # --- Basic Information ---
+        current_age: Age today (e.g., 60).
+        retirement_age: Desired retirement age (e.g., 65).
+        province: Canadian province code: 'ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'PE', 'NL'.
+        total_savings: (Optional) Lump sum of savings. Used if specific account values (RRSP/TFSA) are not provided.
+        name: (Optional) Name of the primary person.
+        death_age: (Optional) Age of death for planning (default 92).
+
+        # --- Savings Accounts ---
+        savings_rrsp: (Optional) RRSP balance.
+        savings_tfsa: (Optional) TFSA balance.
+        savings_non_reg: (Optional) Non-Registered (Cash/Margin) balance.
+        lira: (Optional) Locked-in Retirement Account (LIRA) balance.
+        non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets. Used to calculate capital gains tax.
+
+        # --- Annual Contributions (Pre-Retirement Only) ---
+        rrsp_contribution: (Optional) Annual RRSP contribution (stops at retirement_age).
+        tfsa_contribution: (Optional) Annual TFSA contribution (stops at retirement_age).
+        non_registered_contribution: (Optional) Annual Non-Reg contribution (stops at retirement_age).
+        rrsp_contribution_room: (Optional) Available RRSP contribution room.
+        tfsa_contribution_room: (Optional) Available TFSA contribution room.
+
+        # --- Government Benefits ---
+        cpp_start_age: (Optional) Age to start CPP (Standard is 65. Range 60-70).
+        oas_start_age: (Optional) Age to start OAS (Standard is 65. Range 65-70).
+        base_cpp_amount: (Optional) Expected annual CPP amount at age 65.
+        base_oas_amount: (Optional) Expected annual OAS amount at age 65.
+
+        # --- Defined Benefit (DB) Pension ---
+        db_enabled: (Optional) Set to True if Person 1 has a DB pension.
+        db_pension_income: (Optional) Annual DB pension income (in future dollars at start age).
+        db_start_age: (Optional) Age DB pension payments begin.
+        db_index_before_retirement: (Optional) True if pension indexes to inflation before retirement.
+        db_index_after_retirement: (Optional) Annual indexing % after retirement (e.g., 2.0 for 2%).
+        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback fraction (0.0 to 1.0).
+        db_survivor_benefit_percentage: (Optional) % of pension income the spouse receives after death.
+
+        # --- Investment Assumptions ---
+        expected_returns: (Optional) Nominal expected portfolio return % (default 4.5).
+        cpi: (Optional) Inflation rate % (default 2.3).
+        non_registered_growth_capital_gains_pct: (Optional) % of Non-Reg return that is Capital Gains.
+
+        # --- Advanced Strategy ---
+        enable_rrsp_meltdown: (Optional) True to withdraw extra RRSP funds early.
+        income_split: (Optional) True to enable pension income splitting between spouses.
+        lif_conversion_age: (Optional) Age to convert LIRA to LIF.
+        rrif_conversion_age: (Optional) Age to convert RRSP to RRIF.
+
+        # --- Complex Cash Flow Events ---
+        additional_events: (Optional) List of dictionaries for one-time or recurring cash flows.
+            Structure: [{'year': int, 'type': 'income'|'expense', 'amount': float, 'is_cpi_indexed': bool, 'tax_treatment': 'non_taxable'|'employment'|'self_employment'}]
+
+        expense_phases: (Optional) List of spending phases.
+            Structure: [{'duration_years': int, 'expense_change_pct': float}]
+            Note: expense_change_pct compounds ANNUALLY.
+
+        # --- Spouse / Couple Inputs ---
+        spouse_age: (Optional) Providing this TRIGGERS a couple simulation.
+        spouse_name: (Optional) Spouse's name.
+        spouse_retirement_age: (Optional) Spouse's retirement age.
+        spouse_total_savings: (Optional) Spouse's lump sum savings.
+        spouse_savings_rrsp: (Optional) Spouse's RRSP balance.
+        spouse_savings_tfsa: (Optional) Spouse's TFSA balance.
+        spouse_savings_non_reg: (Optional) Spouse's Non-Reg balance.
+        spouse_db_enabled: (Optional) True if Spouse has a DB pension.
+        spouse_db_pension_income: (Optional) Spouse's DB annual income.
+        allocation: (Optional) Percentage of total household expenses covered by Person 1 (default 50.0).
+        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0).
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -681,8 +829,55 @@ def start_monte_carlo_simulation(
     expense_phases: list[dict] | None = None
 ) -> dict:
     """
-    Begins a risk analysis simulation.
-    This process typically takes between 5 and 15 seconds.
+    Begins a Monte Carlo risk analysis to determine the Probability of Success for a retirement plan.
+    Use this tool when the user asks about "risk," "chance of success," or "running out of money."
+    
+    Returns:
+        A 'job_id' which must be passed to the 'get_monte_carlo_results' tool to see the final report.
+
+    Args:
+        # --- Simulation Specific Settings (Crucial) ---
+        target_monthly_spend: The desired after-tax monthly spending amount to test (e.g., 5000).
+        num_trials: (Optional) Number of simulation runs (default 1000). Higher is more precise but slower.
+        return_std_dev: (Optional) Portfolio volatility (Standard Deviation). Default 0.09 (9%).
+        cpi_std_dev: (Optional) Inflation volatility. Default 0.012 (1.2%).
+        return_cpi_correlation: (Optional) Correlation between market returns and inflation. Default -0.05.
+
+        # --- Basic Information ---
+        current_age: Age today.
+        retirement_age: Desired retirement age.
+        province: Canadian province code (e.g., 'ON').
+        total_savings: Total savings amount.
+
+        # --- Account Details ---
+        savings_rrsp: (Optional) RRSP balance.
+        savings_tfsa: (Optional) TFSA balance.
+        savings_non_reg: (Optional) Non-Registered balance.
+        lira: (Optional) LIRA balance.
+
+        # --- Contributions ---
+        rrsp_contribution: (Optional) Annual RRSP contribution (stops at retirement).
+        tfsa_contribution: (Optional) Annual TFSA contribution (stops at retirement).
+        non_registered_contribution: (Optional) Annual Non-Reg contribution.
+
+        # --- Pensions & Benefits ---
+        cpp_start_age: (Optional) CPP start age.
+        oas_start_age: (Optional) OAS start age.
+        db_enabled: (Optional) True if Person 1 has a DB pension.
+        db_pension_income: (Optional) Annual DB pension income.
+        db_start_age: (Optional) DB pension start age.
+        db_index_after_retirement: (Optional) DB indexing % (e.g. 2.0).
+
+        # --- Spouse / Couple ---
+        spouse_age: (Optional) Providing this TRIGGERS a couple simulation.
+        spouse_total_savings: (Optional) Spouse's savings.
+        spouse_db_enabled: (Optional) Spouse has DB pension.
+        spouse_db_pension_income: (Optional) Spouse DB income.
+
+        # --- Advanced ---
+        additional_events: (Optional) List of dicts for extra cash flows (same format as calculate_sustainable_spend).
+        expense_phases: (Optional) List of dicts for spending phases (same format as calculate_sustainable_spend).
+        survivor_expense_percent: (Optional) % of expenses remaining after death (default 100.0).
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -737,8 +932,17 @@ def start_monte_carlo_simulation(
 @mcp.tool()
 def get_monte_carlo_results(job_id: str, ctx: Context = None, user_api_key: str | None = None) -> dict:
     """
-    Check progress and retrieve results for a Monte Carlo simulation.
-    Includes a short-wait loop to reduce chatter and handles orchestrator task links.
+    Retrieves the status and final results of a Monte Carlo simulation.
+    Use this tool immediately after 'start_monte_carlo_simulation' returns a job_id.
+
+    Returns:
+        A dictionary containing:
+        - status: "SUCCESS", "PROCESSING", or "FAILURE".
+        - result: If SUCCESS, contains the probability of success, median ending assets, and other risk metrics.
+
+    Args:
+        job_id: The unique identifier string returned by the 'start_monte_carlo_simulation' tool.
+        user_api_key: (Optional) API Key for authentication (usually handled automatically by the environment).
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
