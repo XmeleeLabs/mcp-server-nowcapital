@@ -84,8 +84,11 @@ Add this entry (replace the **path** and **API Key**):
 
 ### 2. Verify
 Restart Claude Desktop. You should see the 🔌 icon indicating the tool is connected.
-Try asking: **"Calculate my max retirement spend if I have $600k in savings and I am 55 years old."**
-Try asking: **"What are the full retirement calculation defaults for single or a couple that I can modify?"**
+Try asking:
+*   **Simple Summary:** "Calculate my max retirement spend if I have $600k in savings and I am 55 years old."
+*   **Detailed Cash Flow:** "Provide a detailed year-by-year retirement spend plan for someone aged 60 with $800k in savings."
+*   **Risk Analysis:** "Run a Monte Carlo simulation for my retirement plan if I spend $5,000 per month. I have $700k in savings and I am 60 years old." (Note: This process typically takes 5-15 seconds).
+*   **Capabilities:** "What are the full retirement calculation defaults for single or a couple that I can modify?"
 
 ## Standard Installation (No `uv`)
 If you prefer standard pip:
