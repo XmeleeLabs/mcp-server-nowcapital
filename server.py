@@ -730,7 +730,7 @@ def start_monte_carlo_simulation(
 def get_monte_carlo_results(job_id: str, ctx: Context = None, user_api_key: str | None = None) -> dict:
     """
     Check progress and retrieve results for a Monte Carlo simulation.
-    Includes a short-wait loop to reduce chatter.
+    Includes a short-wait loop to reduce chatter and handles orchestrator task links.
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -742,29 +742,41 @@ def get_monte_carlo_results(job_id: str, ctx: Context = None, user_api_key: str 
 
     headers = {"X-API-Key": final_api_key}
     
-    # Internal Loop (5 iterations * 3s = 15s)
-    for i in range(5):
+    current_job_id = job_id
+    
+    # Internal Loop (15 iterations * 2s = 30s)
+    # Sufficient for simulations taking up to 30s in a single tool call
+    for i in range(15):
         try:
-            status_resp = requests.get(f"{api_url}/simulations/status/{job_id}", headers=headers, timeout=5)
+            status_resp = requests.get(f"{api_url}/simulations/status/{current_job_id}", headers=headers, timeout=5)
             status_resp.raise_for_status()
             status_data = status_resp.json()
             
             if status_data.get("status") == "SUCCESS":
-                result_resp = requests.get(f"{api_url}/simulations/result/{job_id}", headers=headers, timeout=5)
+                result_resp = requests.get(f"{api_url}/simulations/result/{current_job_id}", headers=headers, timeout=5)
                 result_resp.raise_for_status()
-                return {"status": "SUCCESS", "result": result_resp.json()}
+                result_body = result_resp.json()
+                
+                # Check for Orchestrator Link (mimicking UI logic)
+                if isinstance(result_body, dict) and "result_id" in result_body and result_body.get("status") == "Orchestrator started":
+                    # Found intermediate orchestrator result. Switch ID and keep polling.
+                    current_job_id = result_body["result_id"]
+                    time.sleep(1)
+                    continue
+
+                return {"status": "SUCCESS", "result": result_body}
             
             if status_data.get("status") == "FAILURE":
                 return {"status": "FAILURE", "error": status_data.get("error")}
             
             # Still working, sleep before next internal check
-            time.sleep(3)
+            time.sleep(2)
         except Exception as e:
             return {"error": f"Polling Error: {str(e)}"}
 
     return {
         "status": "PROCESSING",
-        "job_id": job_id,
+        "job_id": current_job_id,
         "message": "Simulation is still running. Please poll again in a few seconds."
     }
 
