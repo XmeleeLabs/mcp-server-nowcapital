@@ -383,8 +383,8 @@ def calculate_sustainable_spend(
     spouse_non_registered_eligible_dividend_proportion_pct: float = 0.0,
     spouse_additional_events: list[dict] | None = None,
     income_split: bool | None = None,
-    expected_returns: float = 5.0,
-    cpi: float = 2.0,
+    expected_returns: float = 4.5,
+    cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
@@ -523,8 +523,8 @@ def calculate_detailed_spend_plan(
     spouse_non_registered_eligible_dividend_proportion_pct: float = 0.0,
     spouse_additional_events: list[dict] | None = None,
     income_split: bool | None = None,
-    expected_returns: float = 5.0,
-    cpi: float = 2.0,
+    expected_returns: float = 4.5,
+    cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
@@ -590,6 +590,9 @@ def start_monte_carlo_simulation(
     ctx: Context = None,
     user_api_key: str | None = None,
     num_trials: int = 1000,
+    return_std_dev: float = 0.09,
+    cpi_std_dev: float = 0.012,
+    return_cpi_correlation: float = -0.05,
     province: str = "ON",
     total_savings: float = 0,
     savings_rrsp: float = 0,
@@ -670,8 +673,8 @@ def start_monte_carlo_simulation(
     spouse_non_registered_eligible_dividend_proportion_pct: float = 0.0,
     spouse_additional_events: list[dict] | None = None,
     income_split: bool | None = None,
-    expected_returns: float = 5.0,
-    cpi: float = 2.0,
+    expected_returns: float = 4.5,
+    cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
@@ -713,6 +716,11 @@ def start_monte_carlo_simulation(
     )
     payload["target_monthly_spend"] = target_monthly_spend
     payload["inputs"]["num_trials"] = num_trials
+    payload["inputs"]["expected_returns"] = expected_returns / 100
+    payload["inputs"]["cpi"] = cpi / 100
+    payload["inputs"]["return_std_dev"] = return_std_dev
+    payload["inputs"]["cpi_std_dev"] = cpi_std_dev
+    payload["inputs"]["return_cpi_correlation"] = return_cpi_correlation
 
     try:
         response = requests.post(f"{api_url}/monte-carlo", json=payload, headers={"X-API-Key": final_api_key}, timeout=10)

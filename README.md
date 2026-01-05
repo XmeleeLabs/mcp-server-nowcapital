@@ -87,7 +87,9 @@ Restart Claude Desktop. You should see the 🔌 icon indicating the tool is conn
 Try asking:
 *   **Simple Summary:** "Calculate my max retirement spend if I have $600k in savings and I am 55 years old. Use the calculate_sustainable_spend tool"
 *   **Detailed Cash Flow:** "Provide a detailed year-by-year retirement spend plan for someone aged 60 with $800k in savings. Use the calculate_detailed_spend_plan tool."
-*   **Risk Analysis:** "Run a Monte Carlo simulation for my retirement plan if I spend $5,000 per month. I have $700k in savings and I am 60 years old." (Note: This process typically takes 5-15 seconds). Use the start_monte_carlo_simulation tool."
+*   **Risk Analysis:** "Run a Monte Carlo simulation for my retirement plan if I spend $5,000 per month. I have $700k in savings and I am 60 years old." (Note: This process typically takes 5-15 seconds).
+    *   *Default Economic Model:* Simulations use the **FP Canada Baseline (Most Likely)** assumptions: 4.5% Expected Returns, 2.3% Inflation (CPI), 9% Returns Std Dev, 1.2% CPI Std Dev, and -0.05 Correlation.
+ Use the start_monte_carlo_simulation tool."
 *   **Capabilities:** "What are the full retirement calculation defaults for single or a couple that I can modify in the tools?"
 
 ## Standard Installation (No `uv`)
