@@ -142,7 +142,8 @@ def construct_payload(
     allocation: float,
     base_tfsa_amount: float,
     survivor_expense_percent: float,
-    expense_phases: list[dict] | None
+    expense_phases: list[dict] | None,
+    enable_belt_tightening: bool = False
 ) -> dict:
     # Helper to calculate splits
     def distribute_savings(total, r, t, n):
@@ -826,7 +827,8 @@ def start_monte_carlo_simulation(
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
-    expense_phases: list[dict] | None = None
+    expense_phases: list[dict] | None = None,
+    enable_belt_tightening: bool = False
 ) -> dict:
     """
     Begins a Monte Carlo risk analysis to determine the Probability of Success for a retirement plan.
@@ -878,6 +880,7 @@ def start_monte_carlo_simulation(
         additional_events: (Optional) List of dicts for extra cash flows (same format as calculate_sustainable_spend).
         expense_phases: (Optional) List of dicts for spending phases (same format as calculate_sustainable_spend).
         survivor_expense_percent: (Optional) % of expenses remaining after death (default 100.0).
+        enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -907,7 +910,8 @@ def start_monte_carlo_simulation(
         spouse_db_is_survivor_pension, spouse_rrsp_contribution, spouse_tfsa_contribution, spouse_non_registered_contribution,
         spouse_non_registered_growth_capital_gains_pct, spouse_non_registered_dividend_yield_pct,
         spouse_non_registered_eligible_dividend_proportion_pct, spouse_additional_events, income_split,
-        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases
+        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases,
+        enable_belt_tightening=enable_belt_tightening
     )
     payload["target_monthly_spend"] = target_monthly_spend
     payload["inputs"]["num_trials"] = num_trials
