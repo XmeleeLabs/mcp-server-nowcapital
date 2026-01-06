@@ -268,6 +268,7 @@ def construct_payload(
             "allocation": allocation,       
             "base_tfsa_amount": base_tfsa_amount,
             "survivor_expense_percent": survivor_expense_percent,
+            "enable_belt_tightening": enable_belt_tightening,
         },
         "withdrawal_strategy": {
             "person1": {
@@ -389,7 +390,8 @@ def calculate_sustainable_spend(
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
-    expense_phases: list[dict] | None = None
+    expense_phases: list[dict] | None = None,
+    enable_belt_tightening: bool = False
 ) -> dict:
     """
     Calculates the maximum sustainable monthly spending (after-tax) for a user (and optional spouse) until death.
@@ -467,6 +469,7 @@ def calculate_sustainable_spend(
         spouse_db_pension_income: (Optional) Spouse's DB annual income.
         allocation: (Optional) Percentage of total household expenses covered by Person 1 (0-100). Default 50.0.
         survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0). 70.0 means expenses drop by 30%.
+        enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -496,7 +499,8 @@ def calculate_sustainable_spend(
         spouse_db_is_survivor_pension, spouse_rrsp_contribution, spouse_tfsa_contribution, spouse_non_registered_contribution,
         spouse_non_registered_growth_capital_gains_pct, spouse_non_registered_dividend_yield_pct,
         spouse_non_registered_eligible_dividend_proportion_pct, spouse_additional_events, income_split,
-        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases
+        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases,
+        enable_belt_tightening=enable_belt_tightening
     )
 
     try:
@@ -603,7 +607,8 @@ def calculate_detailed_spend_plan(
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
     survivor_expense_percent: float = 100.0,
-    expense_phases: list[dict] | None = None
+    expense_phases: list[dict] | None = None,
+    enable_belt_tightening: bool = False
 ) -> dict:
     """
     Calculates a detailed year-by-year retirement plan, returning data in CSV format.
@@ -682,6 +687,7 @@ def calculate_detailed_spend_plan(
         spouse_db_pension_income: (Optional) Spouse's DB annual income.
         allocation: (Optional) Percentage of total household expenses covered by Person 1 (default 50.0).
         survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0).
+        enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
     if not final_api_key:
@@ -711,7 +717,8 @@ def calculate_detailed_spend_plan(
         spouse_db_is_survivor_pension, spouse_rrsp_contribution, spouse_tfsa_contribution, spouse_non_registered_contribution,
         spouse_non_registered_growth_capital_gains_pct, spouse_non_registered_dividend_yield_pct,
         spouse_non_registered_eligible_dividend_proportion_pct, spouse_additional_events, income_split,
-        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases
+        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases,
+        enable_belt_tightening=enable_belt_tightening
     )
 
     try:
