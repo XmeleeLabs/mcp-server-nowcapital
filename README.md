@@ -36,6 +36,13 @@ This MCP server acts as a bridge between AI assistants and NowCapital.ca's retir
 3. Navigate to **API Access** to generate an API key
 4. Copy the key - you'll need it for configuration
 
+**API Key Types:**
+- **Demo/Free Keys**: Includes basic retirement calculations (sustainable spending, detailed projections)
+- **Premium Keys**: Unlocks advanced features:
+  - Monte Carlo simulations (risk analysis)
+  - Additional income events (one-time windfalls, part-time work, etc.)
+  - Custom expense phases (Go-Go, Slow-Go, No-Go spending patterns)
+
 **Need help?** Contact support@nowcapital.ca
 
 ## Installation
@@ -248,22 +255,31 @@ Once installed, you can ask Claude questions naturally. Claude will automaticall
 
 **Simple spending calculation:**
 ```
-I'm 55 with $600,000 saved. What's my maximum safe monthly retirement spending? Use the calculate_sustainable_spend tool.
+I'm 55 with $600,000 saved. What's my maximum safe monthly retirement spending?
 ```
 
 **Detailed projection:**
 ```
 Show me a year-by-year retirement plan for someone who is 60 with $800,000 
-in savings, planning to retire at 65. Use the calculate_detailed_spend_plan tool.
+in savings, planning to retire at 65.
 ```
 
-**Risk analysis:**
+**Risk analysis (Premium feature):**
 ```
 I'm 65, have $850,000 saved, and plan to spend $4,500/month. 
 What are the chances my money will last through retirement?
-Use the start_monte_carlo_simulation tool.
 ```
-*Note: Monte Carlo simulations take 5-15 seconds to complete.*
+*Note: Monte Carlo simulations require a Premium API key and take 5-15 seconds to complete.*
+
+**Advanced scenarios (Premium features):**
+```
+I'm 62 with $1M saved. Model my retirement with these phases:
+- First 10 years: spending $5,000/month (active travel years)
+- Next 10 years: reduce spending by 2% annually (slowing down)
+- Remaining years: reduce by another 2% annually (staying home more)
+Also, I'll receive a $50,000 inheritance at age 70.
+```
+*Note: Expense phases and additional income events require a Premium API key.*
 
 **Exploring options:**
 ```
@@ -328,6 +344,13 @@ After killing all processes and restarting, check the status:
 1. **Verify your API key** - Log into NowCapital.ca to validate the key (API Access)
 2. **Check your internet connection** - The server needs to reach api.nowcapital.ca
 3. **Restart Claude Desktop** - Completely quit and reopen the application
+
+### "Feature not available" or premium feature errors
+
+If you see errors about Monte Carlo simulations, expense phases, or additional income events:
+- These are **Premium features** that require a Premium API key
+- Demo/Free keys only support basic calculations (sustainable spending and detailed projections)
+- Upgrade your API key at [NowCapital.ca](https://NowCapital.ca) to unlock these features
 
 ### "Module not found" errors (Manual installation)
 
@@ -398,4 +421,4 @@ Open an issue on [GitHub](https://github.com/XmeleeLabs/mcp-server-nowcapital/is
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/XmeleeLabs/mcp-server-nowcapital) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
