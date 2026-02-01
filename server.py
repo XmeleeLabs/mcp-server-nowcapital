@@ -389,7 +389,7 @@ def calculate_sustainable_spend(
     cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
-    survivor_expense_percent: float = 100.0,
+    survivor_expense_percent: float = 80.0,
     expense_phases: list[dict] | None = None,
     enable_belt_tightening: bool = False
 ) -> dict:
@@ -468,7 +468,7 @@ def calculate_sustainable_spend(
         spouse_db_enabled: (Optional) True if Spouse has a DB pension.
         spouse_db_pension_income: (Optional) Spouse's DB annual income.
         allocation: (Optional) Percentage of total household expenses covered by Person 1 (0-100). Default 50.0.
-        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0). 70.0 means expenses drop by 30%.
+        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 80.0). 70.0 means expenses drop by 30%.
         enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
@@ -606,7 +606,7 @@ def calculate_detailed_spend_plan(
     cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
-    survivor_expense_percent: float = 100.0,
+    survivor_expense_percent: float = 80.0,
     expense_phases: list[dict] | None = None,
     enable_belt_tightening: bool = False
 ) -> dict:
@@ -686,7 +686,7 @@ def calculate_detailed_spend_plan(
         spouse_db_enabled: (Optional) True if Spouse has a DB pension.
         spouse_db_pension_income: (Optional) Spouse's DB annual income.
         allocation: (Optional) Percentage of total household expenses covered by Person 1 (default 50.0).
-        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 100.0).
+        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies (default 80.0).
         enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
@@ -833,7 +833,7 @@ def start_monte_carlo_simulation(
     cpi: float = 2.3,
     allocation: float = 50.0,
     base_tfsa_amount: float = 7000.0,
-    survivor_expense_percent: float = 100.0,
+    survivor_expense_percent: float = 80.0,
     expense_phases: list[dict] | None = None,
     enable_belt_tightening: bool = False
 ) -> dict:
@@ -886,7 +886,7 @@ def start_monte_carlo_simulation(
         # --- Advanced ---
         additional_events: (Optional) List of dicts for extra cash flows (same format as calculate_sustainable_spend).
         expense_phases: (Optional) List of dicts for spending phases (same format as calculate_sustainable_spend).
-        survivor_expense_percent: (Optional) % of expenses remaining after death (default 100.0).
+        survivor_expense_percent: (Optional) % of expenses remaining after death (default 80.0).
         enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
     """
     final_api_key = get_api_key(ctx, user_api_key)
