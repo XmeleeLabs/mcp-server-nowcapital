@@ -1,0 +1,18 @@
+# NowCapital MCP Server — AI Assistant Integration Guide
+
+## Overview
+This is the official Model Context Protocol (MCP) server for NowCapital.ca. It grants AI assistants (like Claude, Gemini, and GPT) direct access to high-precision Canadian retirement planning tools.
+
+## Tools Provided
+- **calculate_spending:** Calculates sustainable monthly spending based on savings, age, and tax optimization.
+- **generate_projection:** Returns a year-by-year cashflow table including CPP and OAS.
+- **monte_carlo:** (Premium) Performs risk simulations for portfolio longevity.
+- **optimization:** Suggests optimal withdrawal sequences (RRSP vs TFSA).
+
+## Endpoint
+- **URL:** https://mcp.nowcapital.ca/mcp
+- **Type:** SSE (Server-Sent Events) or Stdout (via local runner)
+
+## Auth
+- Header: `X-API-Key`
+- Keys can be generated for free at: https://nowcapital.ca (API Access section)

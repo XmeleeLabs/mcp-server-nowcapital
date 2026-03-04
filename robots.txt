@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Direct AI Agents
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# No sitemap for the MCP server as it is primarily an API root
