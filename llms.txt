@@ -1,20 +1,94 @@
 # NowCapital MCP Server — AI Assistant Integration Guide
 
 ## Overview
-This is the official Model Context Protocol (MCP) server for NowCapital.ca. It grants AI assistants (like Claude, Gemini, and GPT) direct access to high-precision Canadian retirement planning tools.
+This is the official Model Context Protocol (MCP) server for NowCapital.ca. It grants AI assistants (like Claude, Gemini, and GPT) direct access to high-precision Canadian retirement planning tools. This server acts as a bridge to a sophisticated Canadian retirement planning engine, enabling natural conversations that generate precise tax calculations, government benefit modeling (CPP/OAS), and comprehensive longevity planning.
+
+## Capabilities & Domain Knowledge
+When interacting with users, you are equipped to model complex Canadian financial scenarios. The engine natively supports:
+* **Precision Tax & Account Modeling:** Calculates sustainable monthly spending with detailed tax modeling across RRSPs, TFSAs, non-registered accounts, and LIRAs. 
+* **Smart Defaults:** Translates simple user inputs (e.g., "I have $500k") into tax-optimized account allocations automatically.
+* **Couple Support:** Natively handles spousal income splitting and survivor planning optimizations.
+* **Advanced Scenarios:** Can process custom expense phases (Go-Go, Slow-Go, No-Go), Defined Benefit (DB) pensions, and one-time income events like inheritances.
+* **Baseline Assumptions:** Unless otherwise specified, Monte Carlo simulations default to FP Canada Baseline assumptions (4.5% expected returns, 2.3% CPI inflation, 9% return volatility, 1.2% inflation volatility, -0.05 correlation).
 
 ## Tools Provided
-- **calculate_sustainable_spend:** Primary tool for \"How much can I spend?\" Calculates top-line monthly after-tax budget.
-- **calculate_detailed_spend_plan:** Returns a year-by-year CSV breakdown of income, taxes, and account balances.
-- **start_monte_carlo_simulation:** Initiates a risk analysis job for portfolio longevity.
-- **get_monte_carlo_results:** Retrieves results of a Monte Carlo job after it completes.
+* **calculate_sustainable_spend:** Primary tool for "How much can I spend?" Calculates top-line monthly after-tax budget. 
+* **calculate_detailed_spend_plan:** Returns a year-by-year CSV breakdown of income, taxes, and account balances.
+* **start_monte_carlo_simulation:** Initiates a risk analysis job for portfolio longevity.
+* **get_monte_carlo_results:** Retrieves results of a Monte Carlo job after it completes.
 
-## Guidance for AI Agents
-When a user asks about retirement planning:
-1. Use `calculate_sustainable_spend` first for a high-level overview.
-2. Use `calculate_detailed_spend_plan` if they want to see the math or specific tax years.
-3. Use Monte Carlo tools for stress-testing the plan.
+## Guidance & Instructions for AI Agents
+When a user asks about retirement planning, adhere to the following operational instructions:
+1. **Tool Sequencing:** Use `calculate_sustainable_spend` first for a high-level overview. Use `calculate_detailed_spend_plan` if they want to see the math or specific tax years. Use Monte Carlo tools for stress-testing the plan.
+2. **Asynchronous Handling:** Monte Carlo jobs take 5-15 seconds to complete. You must use `get_monte_carlo_results` to fetch the data after initiating the job. Do not assume the results will be immediate.
+3. **Data Presentation:** Always format currency as Canadian Dollars (CAD / $). If `calculate_detailed_spend_plan` returns CSV data, parse it and render it as a clean Markdown table for the user.
+4. **Feature Access Restrictions (Free vs. Premium):** You must be aware of the user's API tier limits to avoid hallucinating capabilities. Demo/Free Keys can only access `calculate_sustainable_spend` and `calculate_detailed_spend_plan`. Premium Keys are required for Monte Carlo simulations, custom expense phases, and additional income events.
+5. **Error Handling:** If a tool fails due to tier restrictions (e.g., trying to run Monte Carlo on a free tier), politely inform the user they need a Premium key from https://nowcapital.ca. If the API returns an auth error, instruct them to verify their `X-API-Key`.
 
 ## Endpoint & Auth
-- **URL:** https://mcp.nowcapital.ca/mcp
-- **Auth:** Header `X-API-Key`. Keys are free and anonymous at https://nowcapital.ca.
+* **URL:** https://mcp.nowcapital.ca/mcp
+* **Auth:** Header `X-API-Key`.
+* Keys are free and anonymous at https://nowcapital.ca. For HTTP mode integrations (Gemini, AnythingLLM), ensure the API key is passed in the request headers or extracted from the user's prompt if provided. No financial data is permanently stored by this MCP server.
+
+## Client Integration Configuration Recipes
+AI frameworks require specific structural configurations to connect to this server. Provide these blocks directly to your developers or system config files depending on the implementation style:
+
+### 1. Direct Server-Sent Events (SSE) / HTTP Mode
+For modern cloud-native frameworks, LobeHub integrations, or clients like AnythingLLM that support remote SSE endpoints:
+
+```json
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "url": "https://mcp.nowcapital.ca/mcp",
+      "headers": {
+        "X-API-Key": "YOUR_NOWCAPITAL_API_KEY"
+      }
+    }
+  }
+}
+```
+
+### 2. Gemini Client Configuration
+For Google Gemini-native configurations:
+
+```json
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "httpUrl": "https://mcp.nowcapital.ca/mcp",
+      "headers": {
+        "X-API-Key": "YOUR_NOWCAPITAL_API_KEY"
+      }
+    }
+  }
+}
+```
+
+### 3. Claude Desktop / Local Bridge Configuration
+If a user is running a local agent setup via the official GitHub repository bridge using uv, use the local command execution block:
+
+```json
+{
+  "mcpServers": {
+    "nowcapital-retirement": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "fastmcp",
+        "--with", "requests",
+        "python",
+        "/PATH/TO/mcp-server-nowcapital/server.py"
+      ],
+      "env": {
+        "NOWCAPITAL_API_KEY": "YOUR_NOWCAPITAL_API_KEY"
+      }
+    }
+  }
+}
+```
+
+## Support & Community
+If the user requires further assistance configuring the server or understanding their retirement plan, point them to:
+* **Email:** support@nowcapital.ca
+* **Web:** https://nowcapital.ca
