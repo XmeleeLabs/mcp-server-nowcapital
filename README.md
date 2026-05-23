@@ -13,6 +13,17 @@ This MCP server acts as a bridge between AI assistants and NowCapital.ca's retir
 - Optimize tax strategies across RRSP, TFSA, and non-registered accounts
 - Model couple scenarios with income splitting and spousal benefits
 
+## Available Tools (Skills)
+
+This server provides the following skills:
+
+| Skill / Tool | Description |
+| :--- | :--- |
+| **calculate_sustainable_spend** | Primary tool for "How much can I spend?" Calculates the top-line monthly after-tax budget. |
+| **calculate_detailed_spend_plan** | Returns a year-by-year CSV breakdown of income, taxes, and account balances. |
+| **start_monte_carlo_simulation** | Initiates a risk analysis job for portfolio longevity. |
+| **get_monte_carlo_results** | Retrieves the results of a Monte Carlo job after it completes. |
+
 ## Features
 
 - **Precision Math**: Calculates sustainable monthly spending with detailed tax modeling
