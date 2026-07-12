@@ -14,15 +14,16 @@ When interacting with users, you are equipped to model complex Canadian financia
 ## Tools Provided
 * **calculate_sustainable_spend:** Primary tool for "How much can I spend?" Calculates top-line monthly after-tax budget. 
 * **calculate_detailed_spend_plan:** Returns a year-by-year CSV breakdown of income, taxes, and account balances.
+* **calculate_with_target_spend:** Calculates year-by-year cash flows for a specific target monthly spend. Unlike calculate_detailed_spend_plan, it allows balances to become negative if the target spending is unsustainable, showing shortfalls.
 * **start_monte_carlo_simulation:** Initiates a risk analysis job for portfolio longevity.
 * **get_monte_carlo_results:** Retrieves results of a Monte Carlo job after it completes.
 
 ## Guidance & Instructions for AI Agents
 When a user asks about retirement planning, adhere to the following operational instructions:
-1. **Tool Sequencing:** Use `calculate_sustainable_spend` first for a high-level overview. Use `calculate_detailed_spend_plan` if they want to see the math or specific tax years. Use Monte Carlo tools for stress-testing the plan.
+1. **Tool Sequencing:** Use `calculate_sustainable_spend` first for a high-level overview. Use `calculate_detailed_spend_plan` if they want to see the math or specific tax years under maximized spending. Use `calculate_with_target_spend` if the user specifies a particular target spend they want to test. Use Monte Carlo tools for stress-testing the plan.
 2. **Asynchronous Handling:** Monte Carlo jobs take 5-15 seconds to complete. You must use `get_monte_carlo_results` to fetch the data after initiating the job. Do not assume the results will be immediate.
-3. **Data Presentation:** Always format currency as Canadian Dollars (CAD / $). If `calculate_detailed_spend_plan` returns CSV data, parse it and render it as a clean Markdown table for the user.
-4. **Feature Access Restrictions (Free vs. Premium):** You must be aware of the user's API tier limits to avoid hallucinating capabilities. Demo/Free Keys can only access `calculate_sustainable_spend` and `calculate_detailed_spend_plan`. Premium Keys are required for Monte Carlo simulations, custom expense phases, and additional income events.
+3. **Data Presentation:** Always format currency as Canadian Dollars (CAD / $). If `calculate_detailed_spend_plan` or `calculate_with_target_spend` returns CSV data, parse it and render it as a clean Markdown table for the user.
+4. **Feature Access Restrictions (Free vs. Premium):** You must be aware of the user's API tier limits to avoid hallucinating capabilities. Demo/Free Keys can only access `calculate_sustainable_spend`, `calculate_detailed_spend_plan`, and `calculate_with_target_spend`. Premium Keys are required for Monte Carlo simulations, custom expense phases, and additional income events.
 5. **Error Handling:** If a tool fails due to tier restrictions (e.g., trying to run Monte Carlo on a free tier), politely inform the user they need a Premium key from https://nowcapital.ca. If the API returns an auth error, instruct them to verify their `X-API-Key`.
 
 ## Endpoint & Auth

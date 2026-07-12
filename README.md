@@ -21,6 +21,7 @@ This server provides the following skills:
 | :--- | :--- |
 | **calculate_sustainable_spend** | Primary tool for "How much can I spend?" Calculates the top-line monthly after-tax budget. |
 | **calculate_detailed_spend_plan** | Returns a year-by-year CSV breakdown of income, taxes, and account balances. |
+| **calculate_with_target_spend** | Calculates year-by-year cash flows for a specific target monthly spend. Allows balances to go negative if unsustainable, showing shortfalls. |
 | **start_monte_carlo_simulation** | Initiates a risk analysis job for portfolio longevity. |
 | **get_monte_carlo_results** | Retrieves the results of a Monte Carlo job after it completes. |
 
@@ -273,6 +274,11 @@ I'm 55 with $600,000 saved. What's my maximum safe monthly retirement spending?
 ```
 Show me a year-by-year retirement plan for someone who is 60 with $800,000 
 in savings, planning to retire at 65.
+```
+
+**Specific target spending calculation:**
+```
+I want to retire at 65 with $750,000 saved and spend exactly $4,000/month after tax. Show me my year-by-year cash flows and tell me if my savings will run out.
 ```
 
 **Risk analysis (Premium feature):**

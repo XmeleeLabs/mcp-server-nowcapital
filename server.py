@@ -739,6 +739,230 @@ def calculate_detailed_spend_plan(
         return {"error": f"Request Failed: {str(e)}"}
 
 @mcp.tool()
+def calculate_with_target_spend(
+    current_age: int, 
+    retirement_age: int, 
+    target_monthly_spend: float,
+    ctx: Context = None,
+    user_api_key: str | None = None,
+    province: str = "ON",
+    total_savings: float = 0,
+    savings_rrsp: float = 0,
+    savings_tfsa: float = 0,
+    savings_non_reg: float = 0,
+    name: str = "User",
+    death_age: int = 92,
+    non_reg_acb: float | None = None,
+    lira: float = 0,
+    tfsa_contribution_room: float = 0,
+    rrsp_contribution_room: float = 0,
+    cpp_start_age: int = 65,
+    oas_start_age: int = 65,
+    base_cpp_amount: float = 17196.0,
+    base_oas_amount: float = 8876.0,
+    db_enabled: bool = False,
+    db_pension_income: float = 0,
+    db_start_age: int = 65,
+    db_index_before_retirement: bool = True,
+    db_index_after_retirement: float = 0.0,
+    enable_rrsp_meltdown: bool = False,
+    lif_conversion_age: int = 71,
+    rrif_conversion_age: int = 71,
+    lif_type: int = 1,
+    db_index_after_retirement_to_cpi: bool = False,
+    db_cpp_clawback_fraction: float = 0.0,
+    db_survivor_benefit_percentage: float = 0.0,
+    pension_plan_type: str = "Generic",
+    has_10_year_guarantee: bool = False,
+    has_supplementary_death_benefit: bool = False,
+    db_share_to_spouse: float = 0.0,
+    db_is_survivor_pension: bool = False,
+    rrsp_contribution: float = 0.0,
+    tfsa_contribution: float = 0.0,
+    non_registered_contribution: float = 0.0,
+    non_registered_growth_capital_gains_pct: float = 100.0,
+    non_registered_dividend_yield_pct: float = 0.0,
+    non_registered_eligible_dividend_proportion_pct: float = 0.0,
+    additional_events: list[dict] | None = None,
+    spouse_name: str = "Spouse",
+    spouse_age: int | None = None,
+    spouse_retirement_age: int | None = None,
+    spouse_death_age: int = 92,
+    spouse_total_savings: float = 0,
+    spouse_savings_rrsp: float = 0,
+    spouse_savings_tfsa: float = 0,
+    spouse_savings_non_reg: float = 0,
+    spouse_non_reg_acb: float | None = None,
+    spouse_lira: float = 0,
+    spouse_tfsa_contribution_room: float = 0,
+    spouse_rrsp_contribution_room: float = 0,
+    spouse_cpp_start_age: int = 65,
+    spouse_oas_start_age: int = 65,
+    spouse_base_cpp_amount: float = 0.0, 
+    spouse_base_oas_amount: float = 8876.0, 
+    spouse_db_enabled: bool = False,
+    spouse_db_pension_income: float = 0,
+    spouse_db_start_age: int = 65,
+    spouse_db_index_before_retirement: bool = True,
+    spouse_db_index_after_retirement: float = 0.0,
+    spouse_enable_rrsp_meltdown: bool = False,
+    spouse_lif_conversion_age: int = 71,
+    spouse_rrif_conversion_age: int = 71,
+    spouse_lif_type: int = 1,
+    spouse_db_index_after_retirement_to_cpi: bool = False,
+    spouse_db_cpp_clawback_fraction: float = 0.0,
+    spouse_db_survivor_benefit_percentage: float = 0.0,
+    spouse_pension_plan_type: str = "Generic",
+    spouse_has_10_year_guarantee: bool = False,
+    spouse_has_supplementary_death_benefit: bool = False,
+    spouse_db_share_to_spouse: float = 0.0,
+    spouse_db_is_survivor_pension: bool = False,
+    spouse_rrsp_contribution: float = 0.0,
+    spouse_tfsa_contribution: float = 0.0,
+    spouse_non_registered_contribution: float = 0.0,
+    spouse_non_registered_growth_capital_gains_pct: float = 100.0,
+    spouse_non_registered_dividend_yield_pct: float = 0.0,
+    spouse_non_registered_eligible_dividend_proportion_pct: float = 0.0,
+    spouse_additional_events: list[dict] | None = None,
+    income_split: bool | None = None,
+    expected_returns: float = 4.5,
+    cpi: float = 2.3,
+    allocation: float = 50.0,
+    base_tfsa_amount: float = 7000.0,
+    survivor_expense_percent: float = 80.0,
+    expense_phases: list[dict] | None = None,
+    enable_belt_tightening: bool = False
+) -> dict:
+    """
+    Calculates year-by-year retirement cash flows for a specific target monthly spend.
+    Use this tool when the user specifies a desired retirement spending target (e.g. "I want to spend $5000/month")
+    and wants to see if it is sustainable or if they will experience shortfalls.
+    Unlike calculate_detailed_spend_plan (which maximizes spending), this tool allows account balances
+    to become negative if the target spending is unsustainable.
+    
+    Returns:
+        A dictionary containing 'actual_monthly_spend', 'person1_yearly_data_csv' (and person2 if couple),
+        and ending estate values.
+
+    Args:
+        current_age: Age today (e.g., 60).
+        retirement_age: Desired retirement age (e.g., 65).
+        target_monthly_spend: The desired monthly after-tax retirement spending (e.g., 5000.0).
+        province: Canadian province code: 'ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'PE', 'NL'.
+        total_savings: (Optional) Lump sum of savings. Used if specific account values (RRSP/TFSA) are not provided.
+        name: (Optional) Name of the primary person.
+        death_age: (Optional) Age of death for planning (default 92).
+
+        # --- Savings Accounts ---
+        savings_rrsp: (Optional) RRSP balance.
+        savings_tfsa: (Optional) TFSA balance.
+        savings_non_reg: (Optional) Non-Registered (Cash/Margin) balance.
+        lira: (Optional) Locked-in Retirement Account (LIRA) balance.
+        non_reg_acb: (Optional) Adjusted Cost Base for Non-Registered assets.
+
+        # --- Annual Contributions (Pre-Retirement Only) ---
+        rrsp_contribution: (Optional) Annual RRSP contribution.
+        tfsa_contribution: (Optional) Annual TFSA contribution.
+        non_registered_contribution: (Optional) Annual Non-Reg contribution.
+        rrsp_contribution_room: (Optional) Available RRSP contribution room.
+        tfsa_contribution_room: (Optional) Available TFSA contribution room.
+
+        # --- Government Benefits ---
+        cpp_start_age: (Optional) Age to start CPP (Standard is 65. Range 60-70).
+        oas_start_age: (Optional) Age to start OAS (Standard is 65. Range 65-70).
+        base_cpp_amount: (Optional) Expected annual CPP amount at age 65.
+        base_oas_amount: (Optional) Expected annual OAS amount at age 65.
+
+        # --- Defined Benefit (DB) Pension ---
+        db_enabled: (Optional) Set to True if Person 1 has a DB pension.
+        db_pension_income: (Optional) Annual DB pension income.
+        db_start_age: (Optional) Age DB pension payments begin.
+        db_index_before_retirement: (Optional) True if pension indexes before retirement.
+        db_index_after_retirement: (Optional) Annual indexing % after retirement.
+        db_cpp_clawback_fraction: (Optional) Bridge benefit clawback fraction.
+        db_survivor_benefit_percentage: (Optional) % of pension income spouse receives after death.
+
+        # --- Investment Assumptions ---
+        expected_returns: (Optional) Nominal expected portfolio return % (default 4.5).
+        cpi: (Optional) Inflation rate % (default 2.3).
+        non_registered_growth_capital_gains_pct: (Optional) % of Non-Reg return that is Capital Gains.
+
+        # --- Advanced Strategy ---
+        enable_rrsp_meltdown: (Optional) True to withdraw extra RRSP funds early.
+        income_split: (Optional) True to enable pension income splitting between spouses.
+        lif_conversion_age: (Optional) Age to convert LIRA to LIF.
+        rrif_conversion_age: (Optional) Age to convert RRSP to RRIF.
+
+        # --- Complex Cash Flow Events ---
+        additional_events: (Optional) List of dictionaries for one-time or recurring cash flows.
+        expense_phases: (Optional) List of spending phases.
+
+        # --- Spouse / Couple Inputs ---
+        spouse_age: (Optional) Providing this TRIGGERS a couple simulation.
+        spouse_name: (Optional) Spouse's name.
+        spouse_retirement_age: (Optional) Spouse's retirement age.
+        spouse_total_savings: (Optional) Spouse's lump sum savings.
+        spouse_savings_rrsp: (Optional) Spouse's RRSP balance.
+        spouse_savings_tfsa: (Optional) Spouse's TFSA balance.
+        spouse_savings_non_reg: (Optional) Spouse's Non-Reg balance.
+        spouse_db_enabled: (Optional) True if Spouse has a DB pension.
+        spouse_db_pension_income: (Optional) Spouse's DB annual income.
+        allocation: (Optional) Percentage of total household expenses covered by Person 1.
+        survivor_expense_percent: (Optional) Percentage of household expenses remaining after one spouse dies.
+        enable_belt_tightening: (Optional) If True, skips inflation adjustment on expenses after a year of negative returns.
+    """
+    final_api_key = get_api_key(ctx, user_api_key)
+    if not final_api_key:
+        return {"error": "Authentication Failed."}
+
+    api_url = os.environ.get("NOWCAPITAL_API_BASE_URL")
+    if not api_url:
+        return {"error": "API URL missing."}
+
+    payload = construct_payload(
+        current_age, retirement_age, province, total_savings, savings_rrsp, savings_tfsa, savings_non_reg,
+        name, death_age, non_reg_acb, lira, tfsa_contribution_room, rrsp_contribution_room, cpp_start_age,
+        oas_start_age, base_cpp_amount, base_oas_amount, db_enabled, db_pension_income, db_start_age,
+        db_index_before_retirement, db_index_after_retirement, enable_rrsp_meltdown, lif_conversion_age,
+        rrif_conversion_age, lif_type, db_index_after_retirement_to_cpi, db_cpp_clawback_fraction,
+        db_survivor_benefit_percentage, pension_plan_type, has_10_year_guarantee, has_supplementary_death_benefit,
+        db_share_to_spouse, db_is_survivor_pension, rrsp_contribution, tfsa_contribution, non_registered_contribution,
+        non_registered_growth_capital_gains_pct, non_registered_dividend_yield_pct, non_registered_eligible_dividend_proportion_pct,
+        additional_events, spouse_name, spouse_age, spouse_retirement_age, spouse_death_age, spouse_total_savings,
+        spouse_savings_rrsp, spouse_savings_tfsa, spouse_savings_non_reg, spouse_non_reg_acb, spouse_lira,
+        spouse_tfsa_contribution_room, spouse_rrsp_contribution_room, spouse_cpp_start_age, spouse_oas_start_age,
+        spouse_base_cpp_amount, spouse_base_oas_amount, spouse_db_enabled, spouse_db_pension_income,
+        spouse_db_start_age, spouse_db_index_before_retirement, spouse_db_index_after_retirement, spouse_enable_rrsp_meltdown,
+        spouse_lif_conversion_age, spouse_rrif_conversion_age, spouse_lif_type, spouse_db_index_after_retirement_to_cpi,
+        spouse_db_cpp_clawback_fraction, spouse_db_survivor_benefit_percentage, spouse_pension_plan_type,
+        spouse_has_10_year_guarantee, spouse_has_supplementary_death_benefit, spouse_db_share_to_spouse,
+        spouse_db_is_survivor_pension, spouse_rrsp_contribution, spouse_tfsa_contribution, spouse_non_registered_contribution,
+        spouse_non_registered_growth_capital_gains_pct, spouse_non_registered_dividend_yield_pct,
+        spouse_non_registered_eligible_dividend_proportion_pct, spouse_additional_events, income_split,
+        expected_returns, cpi, allocation, base_tfsa_amount, survivor_expense_percent, expense_phases,
+        enable_belt_tightening=enable_belt_tightening
+    )
+    payload["target_monthly_spend"] = target_monthly_spend
+
+    try:
+        response = requests.post(f"{api_url}/calculate-with-target-spend", json=payload, headers={"X-API-Key": final_api_key}, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        
+        p1_csv = json_to_csv(data.get("person1_yearly_data", []))
+        p2_csv = json_to_csv(data.get("person2_yearly_data", []))
+
+        return {
+            "actual_monthly_spend": data.get("actual_monthly_spend"),
+            "person1_yearly_data_csv": p1_csv,
+            "person2_yearly_data_csv": p2_csv,
+            "person1_net_estate_value": data.get("person1_net_estate_value"),
+            "person2_net_estate_value": data.get("person2_net_estate_value")
+        }
+    except Exception as e:
+        return {"error": f"Request Failed: {str(e)}"}
+
+@mcp.tool()
 def start_monte_carlo_simulation(
     target_monthly_spend: float,
     current_age: int, 
