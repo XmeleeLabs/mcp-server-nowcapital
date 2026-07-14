@@ -454,8 +454,10 @@ def calculate_sustainable_spend(
             Example: [{'year': 2030, 'type': 'income', 'amount': 50000, 'is_cpi_indexed': False, 'tax_treatment': 'non_taxable'}]
 
         expense_phases: (Optional) List of spending phases that adjust the sustainable spend over time.
-            Structure: [{'duration_years': int, 'expense_change_pct': float}]
-            Note: expense_change_pct compounds ANNUALLY. -2.0 means spending drops by 2% every year for the duration.
+            Structure: [{'duration_years': int, 'expense_change_pct': float, 'input_type': 'percentage'|'fixed_real', 'fixed_real_expense': float|None}]
+            Note: expense_change_pct compounds ANNUALLY (used if input_type is 'percentage').
+                  fixed_real_expense sets a hardcoded real annual expense in today's dollars (used if input_type is 'fixed_real').
+                  Defaults: input_type defaults to 'percentage', fixed_real_expense defaults to null.
 
         # --- Spouse / Couple Inputs ---
         spouse_age: (Optional) Providing this TRIGGERS a couple simulation.
@@ -672,8 +674,10 @@ def calculate_detailed_spend_plan(
             Structure: [{'year': int, 'type': 'income'|'expense', 'amount': float, 'is_cpi_indexed': bool, 'tax_treatment': 'non_taxable'|'employment'|'self_employment'}]
 
         expense_phases: (Optional) List of spending phases.
-            Structure: [{'duration_years': int, 'expense_change_pct': float}]
-            Note: expense_change_pct compounds ANNUALLY.
+            Structure: [{'duration_years': int, 'expense_change_pct': float, 'input_type': 'percentage'|'fixed_real', 'fixed_real_expense': float|None}]
+            Note: expense_change_pct compounds ANNUALLY (used if input_type is 'percentage').
+                  fixed_real_expense sets a hardcoded real annual expense in today's dollars (used if input_type is 'fixed_real').
+                  Defaults: input_type defaults to 'percentage', fixed_real_expense defaults to null.
 
         # --- Spouse / Couple Inputs ---
         spouse_age: (Optional) Providing this TRIGGERS a couple simulation.

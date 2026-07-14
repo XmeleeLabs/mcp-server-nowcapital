@@ -195,6 +195,27 @@ def test_expense_phases():
         print(f"✅ PASSED - Max spend: ${result.get('max_monthly_spend', 0):,.2f}/month")
         return True
 
+def test_fixed_real_expense_phases():
+    """Test fixed real expense phases"""
+    result = call_mcp_tool({
+        "current_age": 60,
+        "retirement_age": 65,
+        "savings_rrsp": 800000,
+        "savings_tfsa": 200000,
+        "expense_phases": [
+            {"duration_years": 10, "expense_change_pct": 0.0, "input_type": "fixed_real", "fixed_real_expense": 40000.0},
+            {"duration_years": 10, "expense_change_pct": -5.0, "input_type": "percentage", "fixed_real_expense": None}
+        ],
+        "province": "ON"
+    }, "Test 5b: Fixed Real Expense Phases")
+    
+    if "error" in result:
+        print(f"❌ FAILED: {result['error']}")
+        return False
+    else:
+        print(f"✅ PASSED - Max spend: ${result.get('max_monthly_spend', 0):,.2f}/month")
+        return True
+
 def test_spouse_symmetry():
     """Test spouse-specific parameters (previously hardcoded)"""
     result = call_mcp_tool({
@@ -271,6 +292,7 @@ def main():
         test_db_pension_advanced,
         test_survivor_expense,
         test_expense_phases,
+        test_fixed_real_expense_phases,
         test_spouse_symmetry,
         test_additional_events
     ]
